@@ -1,0 +1,19 @@
+# LaTeX build files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+.tectonic_cache/
+latex/preview/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db

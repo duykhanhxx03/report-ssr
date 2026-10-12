@@ -1,0 +1,478 @@
+<title>Kiểm chứng bài báo SSR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~880px) of numbered report sections; wide tables scroll in their own box. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --fg: #141922;
+  --muted: #576171;
+  --faint: #868f9c;
+  --rule: #dce1e8;
+  --accent: #1c5dc2;
+  --ssr: #e0602b;
+  --ref: #4f6179;
+  --ref2: #9ea9b7;
+  --good: #0a7434;
+  --good-bg: #e2f3e7;
+  --warn: #8f5a00;
+  --warn-bg: #fbeed3;
+  --bad: #b02e2d;
+  --bad-bg: #fbe4e3;
+  --code-bg: #edf0f4;
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1217; --surface: #161a21; --fg: #e7eaef; --muted: #a5aebb; --faint: #7c8592;
+    --rule: #29303a; --accent: #6fa3f1; --ssr: #f07a45; --ref: #a3b4ca; --ref2: #5c6775;
+    --good: #52c47a; --good-bg: #13301e; --warn: #e3ac45; --warn-bg: #33270f;
+    --bad: #f07573; --bad-bg: #3a1a1a; --code-bg: #1c222b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1217; --surface: #161a21; --fg: #e7eaef; --muted: #a5aebb; --faint: #7c8592;
+  --rule: #29303a; --accent: #6fa3f1; --ssr: #f07a45; --ref: #a3b4ca; --ref2: #5c6775;
+  --good: #52c47a; --good-bg: #13301e; --warn: #e3ac45; --warn-bg: #33270f;
+  --bad: #f07573; --bad-bg: #3a1a1a; --code-bg: #1c222b; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 880px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.25; margin: 0; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; font-weight: 700; display: flex; gap: 0.6rem; align-items: baseline; }
+h2 .num { font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent); font-weight: 500; }
+h3 { font-size: 1.02rem; font-weight: 600; margin-top: 1.4rem; }
+p { margin: 0.7rem 0 0; max-width: 68ch; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 4px; }
+ul { margin: 0.6rem 0 0; padding-left: 1.2rem; max-width: 68ch; }
+li + li { margin-top: 0.35rem; }
+
+header.top { display: grid; gap: 0.8rem; padding-bottom: 1.6rem; border-bottom: 1px solid var(--rule); }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.meta { color: var(--muted); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.lede { font-size: 1.06rem; color: var(--fg); }
+
+.findings { margin-top: 1.6rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1.1rem 1.3rem; }
+.findings h2 { font-size: 1.05rem; }
+.findings ol { margin: 0.6rem 0 0; padding-left: 1.3rem; display: grid; gap: 0.55rem; max-width: none; }
+.findings li { margin: 0; }
+
+section { margin-top: 2.6rem; }
+section > p:first-of-type { margin-top: 0.8rem; }
+
+.tablewrap { overflow-x: auto; margin-top: 0.9rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+tr:last-child td { border-bottom: none; }
+th { font-weight: 600; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.02em; background: var(--bg); white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.hl { color: var(--ssr); font-weight: 600; }
+tr.sub td { color: var(--muted); }
+.caption { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; max-width: 72ch; }
+
+.chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+
+.note { margin-top: 1rem; padding: 0.8rem 1rem; border-radius: 8px; background: var(--warn-bg); color: var(--fg); font-size: 0.93rem; max-width: none; }
+.note strong { color: var(--warn); }
+
+/* dumbbell chart */
+.chart { margin-top: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 0.9rem 0.9rem 0.6rem; position: relative; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.82rem; color: var(--muted); padding: 0 0.3rem 0.4rem; }
+.legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.sw.hollow { background: transparent; border: 2px solid var(--muted); }
+.sw.solid { background: var(--muted); }
+.chartbox { overflow-x: auto; }
+svg.db { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--font-body); }
+svg.db .grid { stroke: var(--rule); stroke-width: 1; }
+svg.db .tick { fill: var(--faint); font-size: 11px; font-family: var(--font-mono); }
+svg.db .ds { fill: var(--fg); font-size: 12.5px; font-weight: 600; }
+svg.db .model { fill: var(--muted); font-size: 12px; }
+svg.db .val { fill: var(--fg); font-size: 11px; font-family: var(--font-mono); }
+svg.db .row:hover .model { fill: var(--fg); }
+svg.db .hit { fill: transparent; cursor: default; }
+svg.db .row:hover .hit { fill: var(--code-bg); }
+.tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--bg); font-size: 0.8rem; padding: 0.4rem 0.6rem; border-radius: 6px; line-height: 1.4; white-space: nowrap; }
+.tip b { font-weight: 600; }
+
+dl.files { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0.35rem 1rem; margin: 0.9rem 0 0; font-size: 0.9rem; }
+dl.files dt { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg); overflow-wrap: anywhere; }
+dl.files dd { margin: 0; color: var(--muted); min-width: 0; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 0.8rem 1rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.55; margin: 0.8rem 0 0; }
+
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  h1 { font-size: 1.6rem; }
+  dl.files { grid-template-columns: minmax(0, 1fr); }
+  dl.files dd { margin-bottom: 0.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="eyebrow">Báo cáo tái lập &amp; tối ưu thuật toán</div>
+    <h1>Kiểm chứng bài báo SSR</h1>
+    <p class="lede">“No More K-means: Single-Stage Sparse Coding for Efficient Multi-Vector Retrieval” (Guo et al., ICML 2026; đối chiếu arXiv v3, v4 và bản PMLR). Chạy lại code và checkpoint tác giả công bố, đọc các issue trên GitHub, đối chiếu từng tuyên bố với số đo trên cùng một máy, rồi tối ưu thuật toán truy hồi.</p>
+    <div class="meta">
+      <span>Ngày 12/10/2026</span>
+      <span>Máy: RTX 5060 8 GB · i5-12400F · 32 GB RAM</span>
+      <span>Upstream: <span class="mono">Y-Research-SBU/SSR@c64bc05</span></span>
+    </div>
+  </header>
+
+  <div class="findings">
+    <h2>Kết luận chính</h2>
+    <ol>
+      <li><strong>Code công bố không tái lập được số trong bài.</strong> Chế độ “exact” chấm sai công thức (NFCorpus 8,3 nDCG@10 thay vì 38,8), hàm nạp checkpoint tạo SAE ngẫu nhiên, đường e2e-index bỏ mất ánh xạ latent. Đã sửa 8 nhóm lỗi theo mô tả trong bài, kiểm chứng bằng 3 cách tính độc lập.</li>
+      <li><strong>Checkpoint công bố chỉ vượt trội trên đúng split test bài dùng.</strong> Trên split train/dev của cùng dataset, SSR-tok kém ColBERTv2 từ 0,7 đến 12,6 điểm; riêng split test nó vọt lên 16–19 điểm (SciFact, NFCorpus, FiQA). Backbone BERT của chính checkpoint không có hiện tượng này, nên phần bất thường nằm ở tầng SAE. Trên MS MARCO, dữ liệu train của chính nó, checkpoint kém ColBERTv2 12,7 điểm MRR@10.</li>
+      <li><strong>Các tuyên bố hiệu năng chỉ đúng một phần.</strong> Bỏ được K-means là đúng về thiết kế, nhưng trên FiQA tổng thời gian dựng index của SSR không nhanh hơn PLAID (mã hóa chiếm phần lớn), index lớn hơn 4–7 lần, SSR++ (cấu hình bài) mất 4,6 điểm, và checkpoint chỉ dùng 8.192 trên 16.384 latent.</li>
+      <li><strong>Bản arXiv v4 tự sửa một phần.</strong> Bản v3 so nDCG@10 của SSR với MRR@10 của baseline trên MS MARCO; v4 đưa về cùng chỉ số và lợi thế in-domain giảm từ +5,4 xuống +1,0. Bản chính thức trên PMLR vẫn giữ so sánh lệch này.</li>
+      <li><strong>Tối ưu: truy hồi exact nhanh hơn 19–30 lần trên FiQA</strong> mà kết quả giống hệt từng bit (kernel <code>fast_hyb</code>); dựng index 4,8 s thay vì khoảng 280 s. Thêm một phép xấp xỉ mới (LB-rerank) gần như không mất điểm.</li>
+    </ol>
+  </div>
+
+  <section id="scope">
+    <h2><span class="num">1</span>Phạm vi và cách làm</h2>
+    <p>Bài báo đề xuất SSR: thay bước nén và phân cụm K-means của ColBERT/PLAID bằng một sparse autoencoder (TopK, K = 32 trên h = 16.384 latent), rồi chấm điểm late-interaction trực tiếp trên chỉ mục ngược của các latent (Eq. 4); SSR++ thêm bước lọc thô theo Eq. 12. Các bước đã làm:</p>
+    <ul>
+      <li>Đọc bài và tính lại các bảng; đọc toàn bộ code công bố và các issue trên GitHub.</li>
+      <li>Chạy checkpoint <code>Y-Research-Group/SSR</code> (SSR-tok, BERT-base) trên NFCorpus, SciFact, FiQA, Quora và MS MARCO (re-rank), luôn kèm ColBERTv2 làm đối chứng trên cùng pipeline.</li>
+      <li>Sửa code theo mô tả trong bài, viết test, đóng gói thành patch.</li>
+      <li>Tối ưu thuật toán truy hồi và so sánh hiệu năng với ColBERTv2 + PLAID trên cùng máy.</li>
+    </ul>
+    <p>Pipeline đánh giá được kiểm tra bằng ColBERTv2: SciFact 69,16 (công bố 69,3), NFCorpus 34,40 (33,8), FiQA 35,80 (35,6), Quora 85,67 (85,2). BM25 tự cài cho MS MARCO cho MRR@10 = 18,38 trên dev-small (Anserini: 18,4).</p>
+  </section>
+
+  <section id="bugs">
+    <h2><span class="num">2</span>Lỗi trong code công bố</h2>
+    <p>Hai nhóm độc lập đã báo không tái lập được (issue #1, #2); tác giả thừa nhận một phần nhưng chưa đẩy bản sửa từ 26/06/2026. Bảng dưới liệt kê những gì đã tìm thấy và sửa.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Lỗi</th><th>Ảnh hưởng</th><th>Theo bài</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <tr><td>Chế độ “exact” trên chỉ mục ngược tính Σ<sub>t</sub> max<sub>u</sub> q<sub>t</sub><sup>u</sup>·max<sub>s</sub> d<sub>s</sub><sup>u</sup>, không phải MaxSim; đường Python, numba và hàm “tham chiếu” đều sai giống nhau</td><td>NFCorpus 8,33 / SciFact 7,46 → sau sửa 43,97 / 87,83</td><td>Eq. 4</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td><code>load_ssr</code> dựng SAE ngẫu nhiên (3.072 latent) thay vì nạp checkpoint; bỏ qua <code>config_sentence_transformers.json</code> (doc length 180 thay vì 512, bật query expansion)</td><td>Không nạp được model</td><td>—</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>Đường e2e-index bỏ mất <code>latent_remap</code>, query và index dùng hai hệ chỉ số latent khác nhau</td><td>0,012 → 0,440</td><td>—</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>Bước thô SSR++ không theo Eq. 12; tham số 8 / 32.768 / 512 thay vì K<sub>coarse</sub> = 4, 2.000 ứng viên, block 64</td><td>SSR++ khác bài</td><td>Eq. 11–12, App. D.1</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>nDCG tính nhãn nhị phân, bỏ mức liên quan</td><td>≈ 1 điểm trên NFCorpus</td><td>App. D.1</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>Thiếu số hạng ⅛·L<sub>recon</sub>(4k) trong loss</td><td>Train</td><td>Eq. 7</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>Tham số train lệch Table 6 (γ = 0 tắt hẳn L<sub>CE</sub>, lr 2e-5, batch 256, 1 epoch, không warmup, k<sub>aux</sub> 1.024)</td><td>Train</td><td>Table 6</td><td><span class="chip good">Có preset</span></td></tr>
+          <tr><td>Config SAE của checkpoint có khóa lạ (<code>center_inputs</code>…), dựng index tạo một object Python mỗi posting (tràn RAM từ ~50k tài liệu)</td><td>Không chạy được</td><td>—</td><td><span class="chip good">Đã sửa</span></td></tr>
+          <tr><td>Bộ nạp dữ liệu chỉ lấy 1 hard negative mỗi query; tác giả dùng 32 và gom các triplet của cùng query vào một batch (chỉ có trong trả lời issue #1)</td><td>Train</td><td>Không mô tả</td><td><span class="chip good">Đã sửa theo issue</span></td></tr>
+          <tr><td><code>token_skip_mode</code> bỏ stopword (chỉ có trong config checkpoint, code công bố không có)</td><td>Encode</td><td>Không mô tả</td><td><span class="chip warn">Chưa sửa</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Bản sửa nằm trong <code>repro/ssr_paper_fixes.patch</code> (16 file, áp dụng sạch lên <span class="mono">c64bc05</span>), kèm 7 test: so với MaxSim dạng dense và kiểm tra cách gom batch. Đường code train đã chạy thử trọn vẹn trên một tập MS MARCO nhỏ (chỉ kiểm tra code chạy đúng, không đo chất lượng). Các script <code>*.sh</code> mà tài liệu repo nhắc tới chưa từng được commit vì <code>.gitignore</code> chặn <code>*.sh</code>.</p>
+  </section>
+
+  <section id="test">
+    <h2><span class="num">3</span>Kết quả trên split test</h2>
+    <p>nDCG@10 có trọng số (chuẩn BEIR/MTEB). Cột “SSR-tok đã sửa” là MaxSim chính xác (Eq. 4) của checkpoint công bố; SSR++ theo đúng cấu hình App. D.1.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dataset (số tài liệu)</th><th class="n">Bài báo SSR-tok</th><th class="n">Repo gốc</th><th class="n">SSR-tok đã sửa</th><th class="n">SSR++ đã sửa</th><th class="n">ColBERTv2 (đo lại)</th></tr></thead>
+        <tbody>
+          <tr><td>NFCorpus (3,6k)</td><td class="n">38,8</td><td class="n">8,3</td><td class="n hl">43,97</td><td class="n">43,98</td><td class="n">34,40</td></tr>
+          <tr><td>SciFact (5,2k)</td><td class="n">72,9</td><td class="n">7,5</td><td class="n hl">87,83</td><td class="n">87,83</td><td class="n">69,16</td></tr>
+          <tr><td>FiQA (57,6k)</td><td class="n">39,4</td><td class="n">—</td><td class="n hl">41,41</td><td class="n">36,86</td><td class="n">35,80</td></tr>
+          <tr><td>Quora (523k)</td><td class="n">88,3</td><td class="n">—</td><td class="n hl">85,42</td><td class="n">—</td><td class="n">85,67</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Checkpoint công bố cho số <em>cao hơn</em> bài báo trên 3/4 dataset, nên đây không phải model đã dùng cho Table 1. SciFact 87,8 với một model cỡ BERT-base là cao hơn mọi model 7–8B trong Table 2 của chính bài.</p>
+  </section>
+
+  <section id="splits">
+    <h2><span class="num">4</span>Kiểm tra theo split: điểm vọt lên chỉ ở split test</h2>
+    <p>Nếu model chỉ học MS MARCO (như bài tuyên bố là zero-shot), điểm trên split train/dev và test của cùng một dataset phải gần nhau. ColBERTv2 đúng là như vậy. Backbone dense là chính BERT của checkpoint SSR, bỏ qua SAE, chấm MaxSim trên vector 768 chiều.</p>
+    <div class="chart" id="chart">
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw" style="background:var(--ssr)"></i>SSR-tok (có SAE)</span>
+        <span><i class="sw" style="background:var(--ref)"></i>ColBERTv2</span>
+        <span><i class="sw" style="background:var(--ref2)"></i>Backbone dense (không SAE)</span>
+        <span><i class="sw hollow"></i>split sạch (train/dev)</span>
+        <span><i class="sw solid"></i>split test</span>
+      </div>
+      <div class="chartbox"><svg class="db" id="dumbbell" role="img" aria-label="nDCG@10 trên split sạch và split test cho từng model và dataset"></svg></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dataset</th><th>Model</th><th class="n">Split sạch</th><th class="n">Test</th><th class="n">Test − sạch</th></tr></thead>
+        <tbody id="splitTable"></tbody>
+      </table>
+    </div>
+    <p class="caption">Split sạch: SciFact train (809 query); NFCorpus dev (324); FiQA dev (500); Quora dev (5.000). NFCorpus train (2.590 query) và FiQA train (1.000 query mẫu) cho cùng kết quả: SSR-tok 28,76 và 20,91, ColBERTv2 33,67 và 33,56. Quora: bỏ tài liệu trùng id với query theo quy ước BEIR.</p>
+    <p>Trên ba dataset đầu, tầng SAE thêm 3–9 điểm so với backbone trên split sạch nhưng thêm 18–28 điểm trên split test. Với vài trăm đến vài nghìn query mỗi split, chênh lệch cỡ này không thể do ngẫu nhiên. Kiểu này khớp với việc SAE từng được train hoặc chọn khi có mặt dữ liệu test của BEIR. Code train công bố chỉ đọc MS MARCO, nên điều đó (nếu có) xảy ra trong quy trình nội bộ; báo cáo này không kết luận nguyên nhân. Quora chỉ lệch nhẹ (+3,3 so với +0,4 của ColBERTv2).</p>
+    <div class="note"><strong>Hệ quả:</strong> trên dữ liệu sạch, checkpoint SSR công bố ngang hoặc kém ColBERTv2 (SciFact −0,7; NFCorpus −5,2; FiQA −12,6; Quora −3,1). Không thể dùng checkpoint này làm bằng chứng cho tuyên bố “SSR vượt các baseline”.</div>
+  </section>
+
+  <section id="msmarco">
+    <h2><span class="num">5</span>MS MARCO (in-domain): re-ranking BM25 top-100</h2>
+    <p>MS MARCO là dữ liệu train của SSR. Bài báo báo SSR-tok 45,2 so với ColBERTv2 39,8 (arXiv v3, PMLR); bản v4 sửa thành 45,2 so với 44,2 cùng tính bằng nDCG@10, và Table 15 cho MRR@10 39,5 so với 39,6 của PLAID (xem mục 8). Full retrieval trên 8,8 triệu passage cần index token-level khoảng 70–190 GB RAM, vượt khả năng máy. Vì vậy dùng giao thức re-ranking chuẩn: BM25 (k1 = 0,9, b = 0,4) lấy top-100 cho mỗi query, rồi mọi model chấm lại cùng tập ứng viên bằng MaxSim chính xác. Re-rank bị giới hạn bởi recall của BM25 (66,8% query dev-small có passage liên quan trong top-100), nên không so trực tiếp với số full retrieval trong bài; so sánh giữa các model thì công bằng.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Re-rank BM25 top-100</th><th class="n">dev-small MRR@10</th><th class="n">dev-small nDCG@10</th><th class="n">TREC DL19 nDCG@10</th></tr></thead>
+        <tbody>
+          <tr><td>BM25 (không re-rank)</td><td class="n">18,38</td><td class="n">22,83</td><td class="n">50,72</td></tr>
+          <tr><td>ColBERTv2</td><td class="n">35,86</td><td class="n">40,92</td><td class="n">72,72</td></tr>
+          <tr><td>SSR-tok (checkpoint công bố)</td><td class="n hl">23,18</td><td class="n hl">28,29</td><td class="n hl">57,96</td></tr>
+          <tr><td>Backbone dense của SSR (không SAE)</td><td class="n">15,94</td><td class="n">20,34</td><td class="n">47,43</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">dev-small: 6.980 query, nhãn nhị phân. TREC DL19: 43 query, nhãn 4 mức (MRR tính với mức ≥ 2). BM25 tự cài khớp Anserini (MRR@10 18,4; DL19 nDCG@10 50,6). Pipeline SSR được kiểm tra lại: mã query trùng 235/235 dòng token với hàm của repo, điểm khớp kernel exact tới 1,4·10⁻⁶.</p>
+    <p>Ngay trên dữ liệu in-domain, checkpoint công bố kém ColBERTv2 12,7 điểm MRR@10 và 14,8 điểm nDCG@10 trên DL19. Kết quả này cùng chiều với các split sạch của BEIR ở mục 4, và trái ngược với Table 1. Tầng SAE vẫn có ích so với chính backbone của nó (+7,2 MRR@10), nhưng backbone này là một retriever dense yếu, thấp hơn cả BM25.</p>
+  </section>
+
+  <section id="efficiency">
+    <h2><span class="num">6</span>Các tuyên bố về hiệu năng</h2>
+    <p>Đo trên FiQA (57.638 tài liệu, khoảng 9,8 triệu token), cùng một máy, mỗi lần chỉ chạy một tác vụ. Độ trễ là một query mỗi lần, top-100, sau khi khởi động. PLAID dùng <code>fast-plaid</code> (pylate 1.6), 2 bit, chạy trên GPU; bản CPU của nó không dựng xong index sau hơn 50 phút nên không đưa vào.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Hệ thống</th><th class="n">Dựng index</th><th class="n">Kích thước index</th><th class="n">ms/query (p95)</th><th>Thiết bị</th><th class="n">nDCG@10 test</th><th class="n">nDCG@10 dev</th></tr></thead>
+        <tbody>
+          <tr><td>ColBERTv2 + PLAID</td><td class="n">32,6 s</td><td class="n">0,59 GiB</td><td class="n">44,7 (51)</td><td>GPU</td><td class="n">35,73</td><td class="n">34,93</td></tr>
+          <tr><td>SSR-tok, repo đã sửa (exact)</td><td class="n">164 s</td><td class="n">2,41 GiB</td><td class="n">1.635</td><td>CPU, 1 luồng</td><td class="n">41,41</td><td class="n">22,80</td></tr>
+          <tr><td>SSR-tok, <code>fast_hyb</code> (exact)</td><td class="n">2,9 s</td><td class="n">3,96 GiB</td><td class="n">59,0 (93)</td><td>CPU, 12 luồng</td><td class="n">41,41</td><td class="n">22,80</td></tr>
+          <tr><td>SSR-tok, LB-rerank t8/1000</td><td class="n">2,9 s</td><td class="n">3,96 GiB</td><td class="n">36,7 (57)</td><td>CPU, 12 luồng</td><td class="n">41,41</td><td class="n">22,81</td></tr>
+          <tr><td>SSR-tok, exact GPU</td><td class="n">—</td><td class="n">3,2 GB VRAM</td><td class="n">55,9 (60)</td><td>GPU</td><td class="n">41,41</td><td class="n">22,80</td></tr>
+          <tr><td>SSR++ cấu hình bài (bản tăng tốc)</td><td class="n">2,9 s</td><td class="n">3,96 GiB</td><td class="n">11,7 (17)</td><td>CPU, 12 luồng</td><td class="n">36,86</td><td class="n">18,11</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Mã hóa corpus (chưa tính ở trên, đo khi GPU đã khởi động): ColBERTv2 ≈ 260 s, SSR-tok ≈ 420 s. SSR mã hóa tài liệu tới 512 token (ColBERTv2: 300) và tầng SAE sinh hàng 16.384 chiều cho mỗi token; với batch 32 các tensor này tràn 8 GB VRAM và mã hóa chậm đi khoảng 8 lần. Số exact GPU lấy từ lần đo sạch của bộ tối ưu (p50 khớp với lần đo này, 56 ms). Index tối ưu gồm forward 1,46 GiB, μ-postings 0,43 GiB, token postings 2,07 GiB.</p>
+
+    <h3>Đối chiếu từng tuyên bố</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Bài báo nói</th><th>Đo được</th><th>Đánh giá</th></tr></thead>
+        <tbody>
+          <tr><td>Dựng index nhanh hơn 15× vì bỏ K-means (7,3 h so với 122,9 h trên MS MARCO)</td><td>Ở quy mô FiQA, K-means + nén của PLAID chỉ mất 32,6 s trên GPU; phần tốn thời gian là mã hóa. Tổng: PLAID ≈ 290 s, SSR ≈ 420 s</td><td><span class="chip warn">Không thấy ở quy mô này</span></td></tr>
+          <tr><td>PLAID phải dựng lại khi thêm tài liệu, SSR chỉ cần thêm posting</td><td><code>fast-plaid</code> có sẵn <code>add_documents</code>, <code>remove_documents</code>, <code>update_documents</code></td><td><span class="chip warn">Phóng đại</span></td></tr>
+          <tr><td>Truy hồi nhanh gần 2× PLAID</td><td>SSR exact 56–59 ms so với PLAID 44,7 ms; chỉ SSR++ nhanh hơn rõ (11,7 ms) nhưng mất 4,6–4,7 điểm. LB-rerank 36,7 ms, không mất điểm so với SSR exact</td><td><span class="chip warn">Chỉ đúng khi chấp nhận mất chất lượng</span></td></tr>
+          <tr><td>Index nhỏ hơn PLAID (18,5 GB so với 22,1 GB)</td><td>FiQA: SSR 2,4–4,0 GiB so với PLAID 0,59 GiB, tức lớn hơn 4–7 lần. Ngoại suy sang MS MARCO (khoảng 18 tỷ posting) khó khớp 18,5 GB</td><td><span class="chip bad">Ngược chiều</span></td></tr>
+          <tr><td>SSR++ hầu như không mất chất lượng (Table 5)</td><td>FiQA test 41,41 → 36,86; dev 22,80 → 18,11. Trên NFCorpus/SciFact không mất chỉ vì 2.000 ứng viên gần như phủ hết corpus</td><td><span class="chip bad">Không đúng trên corpus lớn</span></td></tr>
+          <tr><td>h = 16.384 latent (Table 6)</td><td>Checkpoint chỉ dùng 8.192 latent; 8.192 latent còn lại có trọng số 0 và bias đặt cứng −10</td><td><span class="chip warn">Khác cấu hình</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Về chất lượng trên cùng FiQA: trên split dev (sạch), SSR-tok đạt 22,80 so với 34,93 của PLAID. SSR chỉ vượt PLAID trên split test.</p>
+  </section>
+
+  <section id="optimisation">
+    <h2><span class="num">7</span>Tối ưu thuật toán truy hồi</h2>
+    <p>Mục tiêu là tốc độ, giữ nguyên chất lượng; mọi so sánh chất lượng của phương án xấp xỉ dùng split sạch. Mốc so sánh là bản exact đã sửa của repo (một luồng, chia corpus thành khối 5.000 tài liệu).</p>
+    <h3>Kernel exact mới: <code>fast_hyb</code></h3>
+    <ul>
+      <li>Chia corpus thành khối 32 tài liệu liên tiếp để bộ đệm nháp nằm gọn trong cache CPU, các khối chạy song song.</li>
+      <li>Trong mỗi khối, duyệt danh sách posting của mỗi latent của query <em>một lần</em> và cập nhật mọi token query chứa latent đó (bản gốc duyệt lại cho từng token).</li>
+      <li>Phép cộng theo đúng thứ tự latent tăng dần như kernel gốc, nên điểm số <strong>giống hệt từng bit</strong>; đã kiểm chứng độc lập: chênh lệch 0 trên mọi tài liệu và mọi query của NFCorpus và SciFact.</li>
+    </ul>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dataset / split</th><th>Phương pháp</th><th class="n">Luồng</th><th class="n">nDCG@10</th><th class="n">ms/query (p95)</th><th class="n">Tăng tốc</th></tr></thead>
+        <tbody>
+          <tr><td>FiQA test</td><td>Repo đã sửa (mặc định)</td><td class="n">1</td><td class="n">41,41</td><td class="n">1.635</td><td class="n">1×</td></tr>
+          <tr><td>FiQA test</td><td><code>fast_hyb</code> (exact)</td><td class="n">1</td><td class="n">41,41</td><td class="n">320 (497)</td><td class="n">5,1×</td></tr>
+          <tr><td>FiQA test</td><td><code>fast_hyb</code> (exact)</td><td class="n">6</td><td class="n">41,41</td><td class="n">82 (127)</td><td class="n">19,9×</td></tr>
+          <tr><td>FiQA test</td><td><code>fast_hyb</code> (exact)</td><td class="n">12</td><td class="n">41,41</td><td class="n">54 (82)</td><td class="n">30,0×</td></tr>
+          <tr><td>FiQA test</td><td>Exact trên GPU (CSR + segment max)</td><td class="n">GPU</td><td class="n">41,41</td><td class="n">56 (60)</td><td class="n">29,3×</td></tr>
+          <tr><td>FiQA test</td><td>SSR++ cấu hình bài (bản tăng tốc)</td><td class="n">6</td><td class="n">36,86</td><td class="n">19 (27)</td><td class="n">86×</td></tr>
+          <tr class="sub"><td>SciFact test</td><td>Repo đã sửa → <code>fast_hyb</code></td><td class="n">1 → 12</td><td class="n">87,83</td><td class="n">354 → 12,8</td><td class="n">28×</td></tr>
+          <tr class="sub"><td>NFCorpus test</td><td>Repo đã sửa → <code>fast_hyb</code></td><td class="n">1 → 12</td><td class="n">43,99</td><td class="n">43,6 → 2,5</td><td class="n">17×</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Đo khi máy không chạy việc khác; nDCG@10 lệch ±0,05 giữa các bản exact chỉ do thứ tự các tài liệu trùng nhau (corpus có bản sao). Dựng index FiQA: 4,8 s và đỉnh 7,5 GB RAM, so với 174 s + 107 s và 24,5 GB của bản gốc.</p>
+
+    <h3>Phương án xấp xỉ trên FiQA dev (6 luồng; exact = 82 ms, nDCG@10 22,80)</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Phương án</th><th class="n">nDCG@10</th><th class="n">Recall@100</th><th class="n">Trùng top-10 với exact</th><th class="n">Thời gian so với exact</th></tr></thead>
+        <tbody>
+          <tr><td>SSR++ cấu hình bài (K<sub>coarse</sub> 4, 2.000 ứng viên)</td><td class="n">18,11</td><td class="n">33,10</td><td class="n">0,59</td><td class="n">0,22</td></tr>
+          <tr><td>SSR++ K<sub>coarse</sub> 4, 10.000 ứng viên</td><td class="n">22,25</td><td class="n">48,74</td><td class="n">0,88</td><td class="n">0,73</td></tr>
+          <tr><td>SSR++ K<sub>coarse</sub> 32, 2.000 ứng viên</td><td class="n">16,30</td><td class="n">29,83</td><td class="n">0,51</td><td class="n">0,37</td></tr>
+          <tr><td><strong>LB-rerank</strong> t = 8, 1.000 ứng viên (mới)</td><td class="n hl">22,81</td><td class="n">50,72</td><td class="n">0,997</td><td class="n">0,67</td></tr>
+          <tr><td>LB-rerank t = 4, 1.000 ứng viên</td><td class="n">22,40</td><td class="n">46,23</td><td class="n">0,91</td><td class="n">0,52</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">LB-rerank: xếp ứng viên bằng MaxSim chính xác khi chỉ giữ t latent lớn nhất của mỗi token query (một cận dưới của Eq. 4), rồi chấm exact các ứng viên. FiQA train (1.000 query) cho cùng xu hướng: exact 20,91; LB-rerank t8 20,91; SSR++ cấu hình bài 17,90.</p>
+
+    <h3>Hướng không hiệu quả</h3>
+    <ul>
+      <li><strong>Dừng sớm an toàn bằng cận trên</strong> (Eq. 12 đủ K, chặn theo chuẩn token): đúng về toán, cho top-k giống hệt, nhưng cận quá lỏng: 97,6% tài liệu NFCorpus vẫn nằm trên ngưỡng top-100, nên chậm hơn quét toàn bộ 2–4 lần. Lý do: tích vô hướng giữa các token SAE rất nhỏ (ngưỡng ≈ 0,22–0,32 mỗi token query) trong khi độ lỏng của cận là 0,34–0,51.</li>
+      <li><strong>Cắt tỉa theo block (block-max)</strong> như bài mô tả: cận theo block còn lỏng hơn, nên không triển khai tiếp.</li>
+      <li><strong>Gộp nhiều query một lần</strong>: tăng thông lượng tối đa khoảng 1,2×.</li>
+    </ul>
+  </section>
+
+  <section id="sources">
+    <h2><span class="num">8</span>Issue, các phiên bản bài báo và checkpoint</h2>
+    <h3>Trả lời của tác giả trong issue #1 và #2</h3>
+    <p>Hai nhóm độc lập không tái lập được Table 1 (NFCorpus nDCG@10 khoảng 0,02, sau khi sửa lỗi nạp model là 0,108, so với 0,388 trong bài). Tác giả trả lời qua tài khoản tạm và hứa đẩy bản sửa, nhưng repo không có commit nào từ 26/06/2026. Những thông tin bài báo không ghi:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Tác giả nói</th><th>Đối chiếu</th></tr></thead>
+        <tbody>
+          <tr><td>Token [MASK] mở rộng query bị loại trước MaxSim; nhiệt độ L<sub>CE</sub> = 0,3</td><td>Khớp config checkpoint (<code>do_query_expansion: false</code>) và cách chạy ở đây</td></tr>
+          <tr><td>BERT không đóng băng; lr 1e-3 trong Table 6 “không ổn định”, khoảng 1e-6 tốt hơn</td><td>Table 6 ghi 1e-3; đã thêm preset <code>train_issue1_setup.sh</code></td></tr>
+          <tr><td>32 hard negative mỗi query, 2 query × 32 triplet mỗi batch 64; warmup 20.000 bước ≈ 4% của 2 epoch</td><td>Đã cài đặt (<code>--negatives-per-query</code>, <code>ssr/samplers.py</code>), chạy thử được trên GPU 8 GB với batch 16</td></tr>
+          <tr><td>Số hạng ⅛·L<sub>recon</sub>(4k) có dùng khi train, chỉ bị sót khi công bố</td><td>Đã thêm lại</td></tr>
+          <tr><td>Trên NFCorpus hơn 70% latent được kích hoạt (đo bằng script thăm dò sớm)</td><td>Checkpoint công bố: 7.453 / 16.384 latent (45,5%); không thể vượt 50% vì chỉ 8.192 latent hoạt động</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Các phiên bản bài báo</h3>
+    <ul>
+      <li><strong>arXiv v4 (28/09/2026)</strong> đổi chỉ số MS MARCO từ MRR@10 sang nDCG@10 ở mọi bảng và cập nhật số baseline: ColBERTv2 39,8 → 44,2, PLAID 39,7 → 44,1, COIL 35,3 → 40,9, ColBERT 36,0 → 41,1. Bản v3 đặt nDCG@10 của SSR cạnh MRR@10 của baseline; khi cùng chỉ số, lợi thế in-domain giảm từ +5,4 xuống +1,0. V4 cũng sửa trung bình của ColBERT (41,5 → 44,8) và dòng XTR ở Table 9 (47,6 → 45,0), đúng hai mâu thuẫn tính lại được từ v3, và đổi kết quả thí nghiệm quy mô dữ liệu từ “SSR giảm 5,3% so với 8,9%” thành “4,2% so với 4,7%”.</li>
+      <li><strong>Bản chính thức trên PMLR</strong> đổi nhãn sang nDCG@10 nhưng giữ số baseline của v3, nên so sánh lệch chỉ số vẫn nằm trong bản đã xuất bản. Table 15 ở cả hai bản vẫn ghi MRR@10: SSR-tok 39,5, PLAID 39,6, EMVB 39,8. Trang dự án vẫn ghi MS MARCO tính bằng MRR@10.</li>
+    </ul>
+    <h3>Checkpoint trên HuggingFace</h3>
+    <ul>
+      <li>SSR-tok được đưa lên ngày 05/10/2026 (commit “update-ckpt”); head Nemotron-8B ngày 27/09 (commit “Add g878 selected Nemotron-8B sparse retrieval head”). Không có model card, không có thảo luận, chưa có SSR-CLS.</li>
+      <li>Repo GitHub không bật Discussions; slide ICML không có chi tiết kỹ thuật ngoài các bảng trong bài.</li>
+    </ul>
+  </section>
+
+  <section id="limits">
+    <h2><span class="num">9</span>Giới hạn và đề xuất</h2>
+    <ul>
+      <li>MS MARCO mới được kiểm bằng re-ranking (full retrieval cần ≥ 70 GB RAM cho index token-level); chưa train lại (khoảng 500k bước GPU), chưa kiểm biến thể Llama-embed-8B (cần &gt; 8 GB VRAM). Các số độ trễ đo trên RTX 5060 / i5-12400F, không so trực tiếp được với A100 trong bài.</li>
+      <li>Mọi kết luận về chất lượng áp dụng cho checkpoint công bố trên HuggingFace (tải ngày 11/10/2026), không phải model chưa công bố đã dùng cho Table 1.</li>
+      <li>Đề xuất: (1) gửi tác giả bằng chứng theo split cùng patch, đề nghị công bố checkpoint dùng cho Table 1 và danh sách dữ liệu train; (2) nếu tiếp tục dùng SSR, dùng kernel <code>fast_hyb</code> hoặc LB-rerank thay cho SSR++ cấu hình bài; (3) đánh giá chất lượng trên split sạch cho tới khi có checkpoint đáng tin.</li>
+    </ul>
+  </section>
+
+  <section id="files">
+    <h2><span class="num">10</span>Mã nguồn và cách chạy lại</h2>
+    <dl class="files">
+      <dt>repro/ssr_paper_fixes.patch</dt><dd>Toàn bộ bản sửa code repo (16 file), kèm test <code>tests/test_exact_index_maxsim.py</code>, <code>tests/test_samplers.py</code> và hai preset train <code>scripts/train_table6.sh</code>, <code>scripts/train_issue1_setup.sh</code>.</dd>
+      <dt>repro/SSR/</dt><dd>Repo upstream đã áp dụng bản sửa (chưa commit).</dd>
+      <dt>repro/opt/</dt><dd>Mã tối ưu: <code>ssr_opt/fast_exact.py</code>, <code>ssr_opt/gpu_exact.py</code>, bộ đo <code>bench.py</code>, test <code>tests/test_fast_exact.py</code>, kết quả <code>results/</code>.</dd>
+      <dt>repro/crosscheck.py, verify_scipy.py, verify_bug.py</dt><dd>Ba cách tính độc lập dùng để phát hiện và xác nhận lỗi chấm điểm.</dd>
+      <dt>repro/eval_dense_colbert.py, eval_backbone_dense.py</dt><dd>Đối chứng ColBERTv2 và backbone dense theo split.</dd>
+      <dt>repro/quora_ssr.py, gpu_exact_score.py</dt><dd>Mã hóa theo batch và chấm exact trên GPU cho corpus lớn.</dd>
+      <dt>repro/msmarco_rerank.py, plaid_bench.py</dt><dd>MS MARCO re-ranking và so sánh hiệu năng với PLAID.</dd>
+      <dt>repro/results/, repro/logs/</dt><dd>Kết quả JSON và log của mọi lần chạy.</dd>
+    </dl>
+    <pre>python -m ssr.retrieval.eval_mteb --task retrieval --variant ssr \
+  --model-path ckpt/SSR-tok --dataset nfcorpus --data-dir data/mteb \
+  --score-device index        # bản đã sửa: nDCG@10 = 0.4397</pre>
+  </section>
+</div>
+
+<script>
+(function () {
+  var data = [
+    { ds: "SciFact", held: "train", rows: [
+      { m: "ColBERTv2", k: "ref", h: 70.10, t: 69.16 },
+      { m: "Backbone dense", k: "ref2", h: 66.26, t: 69.55 },
+      { m: "SSR-tok", k: "ssr", h: 69.39, t: 87.83 } ] },
+    { ds: "NFCorpus", held: "dev", rows: [
+      { m: "ColBERTv2", k: "ref", h: 32.58, t: 34.40 },
+      { m: "Backbone dense", k: "ref2", h: 20.67, t: 23.71 },
+      { m: "SSR-tok", k: "ssr", h: 27.36, t: 43.97 } ] },
+    { ds: "FiQA", held: "dev", rows: [
+      { m: "ColBERTv2", k: "ref", h: 35.44, t: 35.80 },
+      { m: "Backbone dense", k: "ref2", h: 13.82, t: 13.67 },
+      { m: "SSR-tok", k: "ssr", h: 22.80, t: 41.41 } ] },
+    { ds: "Quora", held: "dev", rows: [
+      { m: "ColBERTv2", k: "ref", h: 85.25, t: 85.67 },
+      { m: "SSR-tok", k: "ssr", h: 82.16, t: 85.42 } ] }
+  ];
+  var fmt = function (v) { return v.toFixed(2).replace(".", ","); };
+  var sign = function (v) { return (v >= 0 ? "+" : "−") + fmt(Math.abs(v)); };
+
+  // table view (always present, also the accessible fallback for the chart)
+  var tb = document.getElementById("splitTable");
+  data.forEach(function (g) {
+    g.rows.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + (i === 0 ? g.ds + " <span style='color:var(--faint)'>(" + g.held + " → test)</span>" : "") + "</td>" +
+        "<td>" + r.m + "</td><td class='n'>" + fmt(r.h) + "</td><td class='n" + (r.k === "ssr" ? " hl" : "") + "'>" + fmt(r.t) +
+        "</td><td class='n" + (r.k === "ssr" ? " hl" : "") + "'>" + sign(r.t - r.h) + "</td>";
+      tb.appendChild(tr);
+    });
+  });
+
+  // dumbbell chart
+  var svg = document.getElementById("dumbbell");
+  var NS = "http://www.w3.org/2000/svg";
+  var W = 720, L = 170, R = 700, top = 26, rowH = 26, gapH = 30;
+  var x = function (v) { return L + (R - L) * v / 100; };
+  var nRows = data.reduce(function (a, g) { return a + g.rows.length; }, 0);
+  var H = top + data.length * gapH + nRows * rowH + 8;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e);
+    return e;
+  }
+  [0, 20, 40, 60, 80, 100].forEach(function (v) {
+    el("line", { x1: x(v), x2: x(v), y1: top - 6, y2: H - 6, "class": "grid" });
+    var t = el("text", { x: x(v), y: 14, "text-anchor": "middle", "class": "tick" });
+    t.textContent = v;
+  });
+  var tip = document.getElementById("tip");
+  var chart = document.getElementById("chart");
+  var y = top;
+  data.forEach(function (g) {
+    y += gapH;
+    var hd = el("text", { x: 6, y: y - 9, "class": "ds" });
+    hd.textContent = g.ds + "  ·  " + g.held + " → test";
+    g.rows.forEach(function (r) {
+      var cy = y + rowH / 2;
+      var gr = el("g", { "class": "row" });
+      el("rect", { x: 0, y: y + 1, width: W, height: rowH - 2, rx: 4, "class": "hit" }, gr);
+      var lab = el("text", { x: 16, y: cy + 4, "class": "model" }, gr);
+      lab.textContent = r.m;
+      var col = "var(--" + r.k + ")";
+      el("line", { x1: x(r.h), x2: x(r.t), y1: cy, y2: cy, style: "stroke:" + col + ";stroke-width:2" }, gr);
+      el("circle", { cx: x(r.h), cy: cy, r: 5, style: "fill:var(--surface);stroke:" + col + ";stroke-width:2" }, gr);
+      el("circle", { cx: x(r.t), cy: cy, r: 5.5, style: "fill:" + col + ";stroke:var(--surface);stroke-width:2" }, gr);
+      if (r.k === "ssr") {
+        var right = r.t >= r.h;
+        var vt = el("text", { x: x(r.t) + (right ? 10 : -10), y: cy + 4, "text-anchor": right ? "start" : "end", "class": "val" }, gr);
+        vt.textContent = sign(r.t - r.h);
+      }
+      gr.addEventListener("mousemove", function (ev) {
+        var box = chart.getBoundingClientRect();
+        tip.innerHTML = "<b>" + g.ds + " · " + r.m + "</b><br>" + g.held + ": " + fmt(r.h) + " · test: " + fmt(r.t) + " · chênh " + sign(r.t - r.h);
+        tip.hidden = false;
+        var left = ev.clientX - box.left + 14;
+        if (left + tip.offsetWidth > box.width - 8) left = ev.clientX - box.left - tip.offsetWidth - 14;
+        tip.style.left = left + "px";
+        tip.style.top = (ev.clientY - box.top + 12) + "px";
+      });
+      gr.addEventListener("mouseleave", function () { tip.hidden = true; });
+      y += rowH;
+    });
+  });
+})();
+</script>
