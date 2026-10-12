@@ -727,6 +727,80 @@ Về chất lượng trên cùng FiQA: trên split dev (sạch) \ssr-tok đạt 
 \label{sec:opt}
 Mục tiêu là giảm độ trễ của phép truy hồi exact (công thức \eqref{eq:ssr}) mà giữ nguyên kết quả; mọi so sánh chất lượng của phương án xấp xỉ dùng split sạch. Mốc so sánh là bản exact đã sửa của repo (một luồng, corpus chia khối 5.000 tài liệu).
 
+\subsection{Vị trí tối ưu trong pipeline truy hồi}
+\label{sec:opt-where}
+Hình~\ref{fig:optmap} mô tả pipeline xử lý một query của \ssr\ sau khi sửa và đánh dấu các bước được tối ưu. Phần mã hóa query (BERT + SAE) và phần chọn top-$k$ giữ nguyên; nhóm thay đổi ba chỗ: cách dựng và lưu chỉ mục, hai bước chấm điểm trên chỉ mục (duyệt posting và gộp max/sum), và bước sinh ứng viên của đường xấp xỉ. Bảng~\ref{tab:optmap} liệt kê từng bước với cách làm của bản gốc và của bản tối ưu.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  >=Latex, node distance=3mm and 5mm,
+  stp/.style={draw, rounded corners=2pt, align=center, font=\scriptsize, minimum height=10mm, minimum width=21mm, inner sep=2pt},
+  keep/.style={stp, fill=gray!12},
+  opt/.style={stp, fill=blue!12, draw=blue!60!black, thick},
+  note/.style={align=center, font=\tiny, text=blue!50!black, text width=22mm},
+  lab/.style={font=\scriptsize\bfseries, anchor=east}
+]
+% ---------- hàng 1: dựng chỉ mục
+\node[lab] (L0) at (0,0) {Dựng chỉ mục};
+\node[keep, right=2mm of L0] (b1) {Mã hóa tài liệu\\BERT + SAE};
+\node[opt, right=of b1] (b2) {Chỉ mục xuôi\\\texttt{int16}/\texttt{float32}};
+\node[opt, right=of b2] (b3) {Posting theo shard\\32 tài liệu};
+\node[opt, right=of b3] (b4) {Posting $\mu_{D,u}$\\(cho bước thô)};
+\draw[->] (b1)--(b2); \draw[->] (b2)--(b3); \draw[->] (b2)--(b4.west);
+\node[note, below=1mm of b2] {bản gốc: object Python\\cho mỗi posting};
+\node[note, below=1mm of b3] {bản gốc: khối 5.000 tài liệu,\\dựng lại mỗi lần chạy};
+% ---------- hàng 2: truy hồi exact
+\node[lab, below=24mm of L0.east, anchor=east] (L1) {Truy hồi exact};
+\node[keep, right=2mm of L1] (s1) {Mã hóa query\\BERT + SAE};
+\node[keep, right=of s1] (s2) {Gom $(u, i, q_i^{(u)})$\\theo neuron};
+\node[opt, right=of s2] (s3) {Duyệt posting\\của $N{\times}K$ neuron};
+\node[opt, right=of s3] (s4) {Max theo token,\\sum theo query};
+\node[keep, right=of s4] (s5) {Top-$k$};
+\draw[->] (s1)--(s2); \draw[->] (s2)--(s3); \draw[->] (s3)--(s4); \draw[->] (s4)--(s5);
+\node[note, below=1mm of s3] {mỗi posting duyệt một lần;\\song song theo shard};
+\node[note, below=1mm of s4] {bộ đệm theo shard nằm\\trong cache; hoặc GPU};
+% ---------- hàng 3: đường xấp xỉ
+\node[lab, below=24mm of L1.east, anchor=east] (L2) {Đường xấp xỉ};
+\node[keep, right=2mm of L2] (a1) {Mã hóa query};
+\node[stp, right=of a1, fill=red!8] (a2) {\ssrpp\ (bài): điểm thô\\công thức (12), $K_c{=}4$};
+\node[opt, right=of a2] (a3) {LB-rerank (nhóm):\\exact với $t{=}8$ neuron/token};
+\node[opt, right=of a3] (a4) {Chấm exact ứng viên\\trên chỉ mục xuôi};
+\node[keep, right=of a4] (a5) {Top-$k$};
+\draw[->] (a1)--(a2); \draw[->, dashed] (a2)--(a3); \draw[->] (a3)--(a4); \draw[->] (a4)--(a5);
+\node[note, below=1mm of a2] {2.000 ứng viên,\\mất 4,6 điểm trên FiQA};
+\node[note, below=1mm of a3] {thay thế bước thô;\\1.000 ứng viên, trùng 99,7\%};
+% ---------- chú giải
+\node[keep, minimum width=8mm, minimum height=4mm, below=11mm of a1.south west, anchor=west, label={[font=\tiny]right:giữ nguyên}] (lg1) {};
+\node[opt, minimum width=8mm, minimum height=4mm, right=16mm of lg1, label={[font=\tiny]right:bước được tối ưu}] (lg2) {};
+\node[stp, fill=red!8, minimum width=8mm, minimum height=4mm, right=22mm of lg2, label={[font=\tiny]right:bước của bài bị thay thế}] (lg3) {};
+\end{tikzpicture}}
+\caption{Pipeline truy hồi của \ssr\ và vị trí các tối ưu của nhóm. Hàng trên: dựng chỉ mục; hàng giữa: truy hồi exact (công thức (4)); hàng dưới: đường xấp xỉ, trong đó bước thô của \ssrpp\ được thay bằng LB-rerank.}
+\label{fig:optmap}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Từng bước của pipeline: cách làm của bản gốc (repo đã sửa) và của bản tối ưu.}
+\label{tab:optmap}
+\footnotesize
+\begin{tabular}{p{2.5cm}p{4.8cm}p{4.8cm}p{2.2cm}}
+\toprule
+\textbf{Bước} & \textbf{Bản gốc (repo đã sửa)} & \textbf{Bản tối ưu} & \textbf{Kết quả (FiQA)}\\
+\midrule
+Dựng chỉ mục & Mỗi posting là một object Python, sắp xếp bằng Python; corpus chia khối 5.000 tài liệu và dựng lại ở mỗi lần chạy & Chỉ mục xuôi \texttt{fw\_lat int16[n\_tok,K]}, \texttt{fw\_val float32[n\_tok,K]}; posting đếm và điền bằng numba, lưu shard-major (khóa = shard$\times h$ + neuron) & 4,8 s thay vì $\approx$280 s; RAM đỉnh 7,5 GB thay vì 24,5 GB\\
+Mã hóa query, gom theo neuron & Giữ nguyên & Giữ nguyên & --\\
+Duyệt posting & Với mỗi token query và mỗi neuron của nó, duyệt lại posting của neuron đó (một neuron chung cho $m$ token bị duyệt $m$ lần); một luồng & Mỗi neuron của query duyệt một lần, cập nhật mọi token chứa nó (cập nhật dạng vector khi $\ge 3$ token, vô hướng khi ít hơn); các shard chạy song song (\texttt{prange}) & Chiếm phần lớn mức tăng tốc 5$\times$ (1 luồng) đến 30$\times$ (12 luồng)\\
+Max theo token, sum theo query & Bộ đệm $N\times 5000$ tài liệu, không nằm trong cache; gộp sau khi duyệt xong cả khối & Gộp ngay trong shard trên bộ đệm $n_{\text{tok}}\times N$ cỡ vài KB; bản GPU thay hai bước này bằng SpMM (CSR) + \texttt{segment\_reduce} & GPU: 56 ms/query\\
+Top-$k$ & \texttt{argpartition} & Giữ nguyên & --\\
+Sinh ứng viên (đường xấp xỉ) & Điểm thô theo công thức (12) trên posting $\mu$, $K_{\text{coarse}}=4$, 2.000 ứng viên & LB-rerank: chấm exact với query cắt còn $t=8$ neuron mỗi token (cận dưới của công thức (4)), 1.000 ứng viên, rồi chấm exact trên chỉ mục xuôi & nDCG 22,81 so với 18,11 của \ssrpp; 0,67 thời gian exact\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tóm lại, phần tối ưu không đụng tới mô hình hay cách biểu diễn: biểu diễn thưa và công thức chấm điểm giữ nguyên, nên mọi kết quả xếp hạng của đường exact trùng khớp với bản gốc. Các thay đổi nằm ở cấu trúc dữ liệu của chỉ mục và thứ tự thực hiện các vòng lặp trong hai bước chấm điểm, cộng thêm một cách chọn ứng viên khác cho đường xấp xỉ. Các mục sau trình bày chi tiết từng phần.
+
 \subsection{Kernel exact mới \texttt{fast\_hyb}}
 Phân tích bản gốc cho thấy ba điểm tốn thời gian: (i) bộ đệm điểm theo (token, tài liệu) có kích thước $N\times 5000$ không nằm trong cache; (ii) mỗi neuron của query được duyệt lại một lần cho mỗi token query chứa nó; (iii) chỉ chạy một luồng. Kernel mới (\texttt{repro/opt/ssr\_opt/fast\_exact.py}) thay đổi như sau:
 \begin{itemize}[leftmargin=1.5cm]
