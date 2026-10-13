@@ -10,7 +10,7 @@
 %
 %  Cấu trúc 5 chương:
 %    1. Bài toán, bối cảnh và mục tiêu
-%    2. Biểu diễn thưa và huấn luyện SSR
+%    2. Biểu diễn sparse và huấn luyện SSR
 %    3. Lập chỉ mục và truy hồi
 %    4. Tái lập và kiểm chứng
 %    5. Cải tiến, thảo luận và kết luận
@@ -216,9 +216,9 @@ for Efficient Multi-Vector Retrieval}\\[1.8cm]
 \hline
 1 & Điều phối, tổng hợp và biên tập báo cáo; Chương 1 ``Bài toán, bối cảnh và mục tiêu'' & \ThanhVienA\\
 \hline
-2 & Dịch bài báo; Chương 2 ``Biểu diễn thưa và huấn luyện SSR'' phần biểu diễn thưa, MaxSim thưa và cận sai lệch (mục 2.1--2.5); Phụ lục B & \ThanhVienB\\
+2 & Dịch bài báo; Chương 2 ``Biểu diễn sparse và huấn luyện SSR'' phần biểu diễn sparse, sparse MaxSim và cận sai lệch (mục 2.1--2.5); Phụ lục B & \ThanhVienB\\
 \hline
-3 & Dịch bài báo; Chương 2 ``Biểu diễn thưa và huấn luyện SSR'' phần huấn luyện lai và đối chiếu thiết lập huấn luyện với mã nguồn (mục 2.6--2.8) & \ThanhVienC\\
+3 & Dịch bài báo; Chương 2 ``Biểu diễn sparse và huấn luyện SSR'' phần hybrid training và đối chiếu thiết lập huấn luyện với mã nguồn (mục 2.6--2.8) & \ThanhVienC\\
 \hline
 4 & Cài đặt môi trường, chạy lại mã nguồn và checkpoint, rà soát và sửa lỗi, tối ưu kernel truy hồi, đo so với ColBERTv2/PLAID; Chương 3 ``Lập chỉ mục và truy hồi''; Chương 4 ``Tái lập và kiểm chứng'' (mục 4.2--4.7); Chương 5 ``Cải tiến, thảo luận và kết luận'' (mục 5.1--5.5); Phụ lục A, D, E & \ThanhVienD\\
 \hline
@@ -260,14 +260,14 @@ for Efficient Multi-Vector Retrieval}\\[1.8cm]
 \addcontentsline{toc}{chapter}{TÓM TẮT}
 Multi-Vector Retrieval (MVR) theo kiểu ColBERT giữ một vector cho mỗi token và so khớp bằng MaxSim, nhờ đó chính xác hơn các mô hình một vector, nhưng ColBERTv2/PLAID phải dựa vào K-means clustering trên hàng tỷ vector token, khiến lập chỉ mục tốn hàng trăm giờ và không thể thêm tài liệu mà không dựng lại. Báo cáo tìm hiểu bài báo \emph{No More K-means} (ICML 2026) và phương pháp Single-stage Sparse Retrieval (\ssr): mỗi embedding token được TopK Sparse Autoencoder chiếu lên không gian 16.384 chiều chỉ có 32 chiều khác không, mỗi neuron hoạt động được xem như một pseudo-token, và truy hồi diễn ra trong một giai đoạn trên inverted index.
 
-Phần lý thuyết trình bày MaxSim thưa và cận sai lệch so với điểm dense, hàm mục tiêu huấn luyện lai, inverted index mức neuron và thuật toán coarse-to-fine \ssrpp.
+Phần lý thuyết trình bày sparse MaxSim và cận sai lệch so với điểm dense, hàm mục tiêu hybrid training, inverted index mức neuron và thuật toán coarse-to-fine \ssrpp.
 
 Phần thực nghiệm kiểm chứng mã nguồn và checkpoint công bố trên NFCorpus, SciFact, FiQA, Quora và MS~MARCO, với ColBERTv2 làm đối chứng trên cùng pipeline. Nhóm phát hiện 10 điểm sai lệch giữa mã nguồn và bài báo, đã xử lý 9 điểm bằng bản sửa hoặc bổ sung cấu hình; cơ chế \texttt{token\_skip\_mode} ghi trong config của checkpoint chưa được triển khai. Riêng lỗi công thức chấm điểm trên inverted index làm \ndcg\ trên NFCorpus rơi từ 43,97 xuống 8,33. Checkpoint công bố vượt ColBERTv2 trên split test của ba tập BEIR đã đo, nhưng kém ColBERTv2 trên các split train/dev đối chứng của cùng tập và trên MS~MARCO theo giao thức re-ranking BM25 top-100; các phép kiểm tra hiện có chưa xác định được nguyên nhân của chênh lệch này.
 
 Phần cải tiến gồm kernel truy hồi exact \fasthyb\ cho kết quả xếp hạng giống hệt bản gốc và nhanh hơn 29,6 lần so với bản exact của repo trên cùng 100 query FiQA (1.635 ms so với 55 ms mỗi query, CPU 12 luồng), một bản exact trên GPU, và phép xấp xỉ LB-rerank giữ 99,7\% top-10 của phép tính exact với 0,67 lần thời gian trên FiQA dev. Đổi lại, chỉ mục của bản tối ưu lớn hơn chỉ mục của repo khoảng 1,6 lần.
 
 \medskip
-\noindent\textbf{Từ khóa:} Multi-Vector Retrieval, Sparse Autoencoder, inverted index, late interaction, ColBERT, pruning từ thô đến tinh, tái lập nghiên cứu.
+\noindent\textbf{Từ khóa:} Multi-Vector Retrieval, Sparse Autoencoder, inverted index, late interaction, ColBERT, coarse-to-fine pruning, tái lập nghiên cứu.
 
 \clearpage
 \tableofcontents
@@ -449,7 +449,7 @@ Kích thước chỉ mục & Nhỏ & Nhỏ & Rất lớn\\
 \node[box, right=2mm of L2] (s1) {Mã hóa BERT\\(1 vector / token)};
 \node[sp, right=of s1] (s2) {SAE TopK\\$768\to16384$\\$K=32$ neuron bật};
 \node[sp, right=of s2] (s3) {Inverted index\\theo neuron\\(nối thêm được)};
-\node[sp, right=of s3] (s4) {MaxSim thưa trên\\posting list\\(công thức (4))};
+\node[sp, right=of s3] (s4) {sparse MaxSim trên\\posting list\\(công thức (4))};
 \node[box, right=of s4, dashed] (s5) {\ssrpp\ (tùy chọn):\\bước thô $K_{\mathrm{coarse}}{=}4$\\rồi chấm tinh};
 \foreach \a/\b in {s1/s2,s2/s3,s3/s4} \draw[->] (\a)--(\b);
 \draw[->, dashed] (s4)--(s5);
@@ -480,32 +480,32 @@ Cách tiếp cận trên có ba hạn chế chính, với số liệu do bài b�
 \textbf{Hạn chế} & \textbf{Nguyên nhân} & \textbf{\ssr\ giải quyết bằng} & \textbf{Trình bày ở}\\
 \midrule
 Lập chỉ mục chậm, phải xây lại & K-means trên hàng tỷ vector & Inverted index mức neuron, chỉ nối thêm & Chương~\ref{ch:index}\\
-Mất thông tin & Nén về centroid, giảm chiều & Chiếu lên không gian nhiều chiều thưa & Chương~\ref{ch:sparse}\\
-Pipeline phức tạp, $O(N\times M)$ & Ba tầng cộng nhiều lượt giải nén & Một giai đoạn; \ssrpp\ pruning từ thô đến tinh & Chương~\ref{ch:index}\\
-Đặc trưng thưa phải đủ phân biệt & Sparse code có thể trùng nhau & Loss lai reconstruction + contrastive & Chương~\ref{ch:sparse}\\
+Mất thông tin & Nén về centroid, giảm chiều & Chiếu lên không gian nhiều chiều sparse & Chương~\ref{ch:sparse}\\
+Pipeline phức tạp, $O(N\times M)$ & Ba tầng cộng nhiều lượt giải nén & Một giai đoạn; \ssrpp\ pruning coarse-to-fine & Chương~\ref{ch:index}\\
+Đặc trưng sparse phải đủ phân biệt & Sparse code có thể trùng nhau & Hybrid loss reconstruction + contrastive & Chương~\ref{ch:sparse}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \section{Ý tưởng của \ssr\ và bài báo}
 \label{sec:ssr-idea}
-Từ các hạn chế trên, bài báo đặt câu hỏi: \emph{liệu có thể giữ được độ chi tiết mức token của MVR, đạt tốc độ tương đương tìm kiếm từ vựng, mà không cần đến K-means clustering hay không?} Ý tưởng của \ssr\ là đảo ngược hướng biến đổi không gian: thay vì nén embedding token xuống không gian ít chiều, \ssr\ chiếu nó lên một không gian \emph{nhiều chiều hơn nhưng cực kỳ thưa} nhờ Sparse Autoencoder (SAE), trong đó mỗi token chỉ kích hoạt $K=32$ trên $h=16.384$ neuron. Mỗi neuron hoạt động được coi như một ``pseudo-token''; vì số neuron bật rất ít so với số chiều, mỗi neuron chỉ xuất hiện ở một phần nhỏ token, nên toàn bộ hạ tầng inverted index vốn dùng cho BM25 có thể được tái sử dụng.
+Từ các hạn chế trên, bài báo đặt câu hỏi: \emph{liệu có thể giữ được độ chi tiết mức token của MVR, đạt tốc độ tương đương tìm kiếm từ vựng, mà không cần đến K-means clustering hay không?} Ý tưởng của \ssr\ là đảo ngược hướng biến đổi không gian: thay vì nén embedding token xuống không gian ít chiều, \ssr\ chiếu nó lên một không gian \emph{nhiều chiều hơn nhưng cực kỳ sparse} nhờ Sparse Autoencoder (SAE), trong đó mỗi token chỉ kích hoạt $K=32$ trên $h=16.384$ neuron. Mỗi neuron hoạt động được coi như một ``pseudo-token''; vì số neuron bật rất ít so với số chiều, mỗi neuron chỉ xuất hiện ở một phần nhỏ token, nên toàn bộ hạ tầng inverted index vốn dùng cho BM25 có thể được tái sử dụng.
 
-Bài báo đóng góp ba điểm: (i) chiếu embedding token lên không gian thưa nhiều chiều để thay thế clustering, cho phép truy hồi ngữ nghĩa đa vector qua một giai đoạn trên inverted index; (ii) hàm mục tiêu huấn luyện lai kết hợp reconstruction và contrastive nhằm vừa giữ thông tin vừa bảo đảm khả năng phân biệt; (iii) inverted index mức neuron cùng thuật toán truy hồi hai bước \ssrpp, kèm phân tích lý thuyết về sai lệch bị chặn so với điểm dense và đánh giá trên MS~MARCO, BEIR và backbone LLM 8B. Bài còn đề xuất hai biến thể: \ssr-tok chỉ dùng điểm token thưa và \ssr-CLS bổ sung tín hiệu ngữ nghĩa toàn cục từ token \texttt{[CLS]}. Theo số liệu công bố, \ssr\ đạt \ndcg\ trung bình 52,9--53,4 trên 13 tập BEIR với độ trễ 17,5--19,5 ms, vừa cao hơn vừa nhanh hơn ColBERTv2, PLAID và SPLADE-v3; các số liệu này được tổng hợp và kiểm chứng ở Chương~\ref{ch:repro}.
+Bài báo đóng góp ba điểm: (i) chiếu embedding token lên không gian sparse nhiều chiều để thay thế clustering, cho phép truy hồi ngữ nghĩa đa vector qua một giai đoạn trên inverted index; (ii) hàm mục tiêu hybrid training kết hợp reconstruction và contrastive nhằm vừa giữ thông tin vừa bảo đảm khả năng phân biệt; (iii) inverted index mức neuron cùng thuật toán truy hồi hai bước \ssrpp, kèm phân tích lý thuyết về sai lệch bị chặn so với điểm dense và đánh giá trên MS~MARCO, BEIR và backbone LLM 8B. Bài còn đề xuất hai biến thể: \ssr-tok chỉ dùng điểm token sparse và \ssr-CLS bổ sung tín hiệu ngữ nghĩa toàn cục từ token \texttt{[CLS]}. Theo số liệu công bố, \ssr\ đạt \ndcg\ trung bình 52,9--53,4 trên 13 tập BEIR với độ trễ 17,5--19,5 ms, vừa cao hơn vừa nhanh hơn ColBERTv2, PLAID và SPLADE-v3; các số liệu này được tổng hợp và kiểm chứng ở Chương~\ref{ch:repro}.
 
 Bài báo \emph{No More K-means: Single-Stage Sparse Coding for Efficient Multi-Vector Retrieval} của Lixuan Guo, Yifei Wang, Tiansheng Wen, Aosong Feng, Stefanie Jegelka và Chenyu You được công bố tại ICML 2026 (PMLR~306)~\cite{ssr,ssrpmlr}. Báo cáo dùng bản arXiv:2605.30120 v3 (03/06/2026) làm bản chính và đối chiếu với bản v4 (28/09/2026) cùng bản PMLR. Mã nguồn được công bố tại \url{https://github.com/Y-Research-SBU/SSR} (giấy phép MIT, commit \texttt{c64bc05})~\cite{ssrcode}, checkpoint \ssr-tok tại \url{https://huggingface.co/Y-Research-Group/SSR}~\cite{ssrckpt}.
 
 \section{Các nghiên cứu liên quan}
 \textbf{Tối ưu hóa MVR.} ColBERTv2 giảm chiều và nén residual~\cite{colbertv2}; PLAID~\cite{plaid} và EMVB~\cite{emvb} cải thiện khâu pruning nhiều tầng bằng centroid và bit-vector/SIMD; XTR~\cite{xtr} và WARP~\cite{warp} đặt mục tiêu truy hồi token rẻ hơn. Tất cả vẫn cần một codebook học bằng K-means và phải dựng lại codebook khi kho thay đổi.
 
-\textbf{Truy hồi thưa học được và inverted index.} SPLADE~\cite{splade} học trọng số thưa trên từ điển 30.522 từ của BERT và truy hồi bằng inverted index, nhưng gộp cả văn bản thành \emph{một} vector thưa trên một từ điển cố định. COIL~\cite{coil} giữ tương tác mức token nhưng chỉ cho các token khớp từ chính xác. \ssr\ khác hai hướng này ở chỗ không gian thưa được \emph{học} từ SAE, không ràng buộc vào từ điển, và tương tác mức token được giữ cho mọi cặp token chung neuron.
+\textbf{Learned sparse retrieval và inverted index.} SPLADE~\cite{splade} học trọng số sparse trên từ điển 30.522 từ của BERT và truy hồi bằng inverted index, nhưng gộp cả văn bản thành \emph{một} vector sparse trên một từ điển cố định. COIL~\cite{coil} giữ tương tác mức token nhưng chỉ cho các token khớp từ chính xác. \ssr\ khác hai hướng này ở chỗ không gian sparse được \emph{học} từ SAE, không ràng buộc vào từ điển, và tương tác mức token được giữ cho mọi cặp token chung neuron.
 
 \textbf{Sparse Autoencoder.} SAE với các biến thể TopK~\cite{topksae}, BatchTopK, JumpReLU và Gated được dùng nhiều trong nghiên cứu diễn giải mô hình ngôn ngữ, nhằm tách dense embedding thành các ``khái niệm'' riêng. \ssr\ là một trong những ứng dụng đầu tiên của TopK SAE vào truy hồi: mỗi chiều của sparse code là một neuron khái niệm, không phải một từ, và được dùng làm khóa của inverted index.
 
 \section{Mục tiêu, câu hỏi kiểm chứng, phạm vi và phương pháp}
 \label{sec:goal}
 \subsection{Mục tiêu và câu hỏi kiểm chứng}
-Báo cáo có hai mục tiêu. Về lý thuyết, trình bày cơ sở của \ssr: biểu diễn thưa và MaxSim thưa, hàm mục tiêu huấn luyện lai, inverted index mức neuron và thuật toán \ssr/\ssrpp. Về thực hành, chạy lại mã nguồn và checkpoint công bố, đối chiếu mã nguồn với từng công thức, kiểm chứng kết quả với baseline đối chứng, và cải tiến mã nguồn. Phần thực hành được tổ chức quanh bốn câu hỏi kiểm chứng:
+Báo cáo có hai mục tiêu. Về lý thuyết, trình bày cơ sở của \ssr: biểu diễn sparse và sparse MaxSim, hàm mục tiêu hybrid training, inverted index mức neuron và thuật toán \ssr/\ssrpp. Về thực hành, chạy lại mã nguồn và checkpoint công bố, đối chiếu mã nguồn với từng công thức, kiểm chứng kết quả với baseline đối chứng, và cải tiến mã nguồn. Phần thực hành được tổ chức quanh bốn câu hỏi kiểm chứng:
 \begin{itemize}[leftmargin=1.5cm]
   \item \textbf{(K1) Tái lập.} Mã nguồn và checkpoint công bố có cho ra chất lượng như Bảng 1 của bài trên BEIR không? Nếu không, sai lệch nằm ở đâu?
   \item \textbf{(K2) Chất lượng so với đối chứng.} Trên cùng pipeline, checkpoint công bố so với ColBERTv2 thế nào trên split test, trên các split train/dev đối chứng của cùng tập dữ liệu, và trên MS~MARCO?
@@ -529,23 +529,23 @@ Báo cáo có hai mục tiêu. Về lý thuyết, trình bày cơ sở của \ss
 Ở thời điểm thực hiện báo cáo (10/2026), mã nguồn của bài có hai issue công khai từ hai nhóm độc lập báo không tái lập được Bảng 1~\cite{ssrcode}; tác giả đã thừa nhận một số lỗi và bản arXiv v4 đã sửa lại cách so sánh trên MS~MARCO. Vì vậy, bên cạnh việc tìm hiểu ý tưởng, kiểm tra khả năng tái lập là nội dung trọng tâm của Chương~\ref{ch:repro}.
 
 \subsection{Cấu trúc báo cáo}
-Chương~\ref{ch:sparse} trình bày biểu diễn thưa, MaxSim thưa, cận sai lệch so với điểm dense và cách huấn luyện SAE; Chương~\ref{ch:index} trình bày inverted index mức neuron và hai thuật toán \ssr, \ssrpp; Chương~\ref{ch:repro} tổng hợp các kết quả công bố cần kiểm chứng, rồi trình bày môi trường, các sai lệch mã nguồn, kết quả tái lập và so sánh với ColBERTv2/PLAID; Chương~\ref{ch:opt} trình bày phần cải tiến mã nguồn, thảo luận và kết luận theo từng câu hỏi kiểm chứng. Phụ lục~\ref{app:fixes} ghi chi tiết từng lỗi đã sửa kèm đoạn mã trước và sau; Phụ lục~\ref{app:proofs} chứng minh hai định lý về cận sai lệch; Phụ lục~\ref{app:paper} tổng hợp các kết quả khác của bài báo; Phụ lục~\ref{app:sources} ghi nguồn của từng số liệu hiệu năng; Phụ lục~\ref{app:run} hướng dẫn chạy lại. Mã nguồn, patch, script đánh giá và kết quả của nhóm được công bố tại \url{\RepoNhom}.
+Chương~\ref{ch:sparse} trình bày biểu diễn sparse, sparse MaxSim, cận sai lệch so với điểm dense và cách huấn luyện SAE; Chương~\ref{ch:index} trình bày inverted index mức neuron và hai thuật toán \ssr, \ssrpp; Chương~\ref{ch:repro} tổng hợp các kết quả công bố cần kiểm chứng, rồi trình bày môi trường, các sai lệch mã nguồn, kết quả tái lập và so sánh với ColBERTv2/PLAID; Chương~\ref{ch:opt} trình bày phần cải tiến mã nguồn, thảo luận và kết luận theo từng câu hỏi kiểm chứng. Phụ lục~\ref{app:fixes} ghi chi tiết từng lỗi đã sửa kèm đoạn mã trước và sau; Phụ lục~\ref{app:proofs} chứng minh hai định lý về cận sai lệch; Phụ lục~\ref{app:paper} tổng hợp các kết quả khác của bài báo; Phụ lục~\ref{app:sources} ghi nguồn của từng số liệu hiệu năng; Phụ lục~\ref{app:run} hướng dẫn chạy lại. Mã nguồn, patch, script đánh giá và kết quả của nhóm được công bố tại \url{\RepoNhom}.
 % =====================================================================
 %  CHƯƠNG 2
 % =====================================================================
-\chapter{Biểu diễn thưa và huấn luyện SSR}
+\chapter{Biểu diễn sparse và huấn luyện SSR}
 \label{ch:sparse}
 
-Chương này trình bày phần mô hình của \ssr: vì sao chuyển từ biểu diễn dense ít chiều sang biểu diễn thưa nhiều chiều, điểm tương đồng được tính như thế nào trên không gian thưa, sai số so với điểm dense bị chặn bởi những đại lượng nào, và SAE được huấn luyện với hàm mục tiêu gì để sparse code vừa giữ thông tin vừa đủ phân biệt. Cuối chương, nhóm đối chiếu thiết lập huấn luyện trong bài với mã nguồn công bố.
+Chương này trình bày phần mô hình của \ssr: vì sao chuyển từ biểu diễn dense ít chiều sang biểu diễn sparse nhiều chiều, điểm tương đồng được tính như thế nào trên không gian sparse, sai số so với điểm dense bị chặn bởi những đại lượng nào, và SAE được huấn luyện với hàm mục tiêu gì để sparse code vừa giữ thông tin vừa đủ phân biệt. Cuối chương, nhóm đối chiếu thiết lập huấn luyện trong bài với mã nguồn công bố.
 
-\section{Từ biểu diễn dense sang biểu diễn thưa}
+\section{Từ biểu diễn dense sang biểu diễn sparse}
 ColBERT chiếu mỗi token về một vector 128 chiều trong đó hầu như mọi chiều đều khác không. Chính đặc điểm dense này khiến inverted index không dùng được: một vector dense ``nằm'' trên mọi chiều, không có chiều nào đủ đặc trưng để làm khóa tra cứu, nên muốn tìm ứng viên hệ thống phải clustering rồi duyệt theo centroid, tức quay lại nút thắt ở mục~\ref{sec:limits}.
 
-Sparse coding~\cite{sparsecoding} biểu diễn một tín hiệu bằng tổ hợp của một số ít phần tử lấy từ một từ điển lớn hơn nhiều so với số chiều tín hiệu (từ điển overcomplete, $h\gg d$). Trong Sparse Autoencoder, mỗi neuron được kỳ vọng đảm nhiệm một ``khái niệm'' ngữ nghĩa hẹp, và dense embedding của token được xem là chồng chập (superposition) của nhiều khái niệm như vậy; nhiệm vụ của SAE là tách các khái niệm đó ra thành các chiều riêng. Với truy hồi, điều quan trọng là hai token gần nghĩa sẽ kích hoạt chung một số neuron, nên một neuron hoạt động đóng vai trò như một pseudo-token, tương tự một từ khóa trong BM25. Vì số neuron bật cho mỗi token rất nhỏ ($K=32$ trên $h=16.384$, khoảng 0,2\%), mỗi neuron chỉ xuất hiện ở một phần nhỏ token, đủ để xây inverted index. Bảng~\ref{tab:dense-sparse} đối chiếu hai cách biểu diễn, Hình~\ref{fig:tokenflow} mô tả luồng biến đổi một token.
+Sparse coding~\cite{sparsecoding} biểu diễn một tín hiệu bằng tổ hợp của một số ít phần tử lấy từ một từ điển lớn hơn nhiều so với số chiều tín hiệu (từ điển overcomplete, $h\gg d$). Trong Sparse Autoencoder, mỗi neuron được kỳ vọng đảm nhiệm một ``khái niệm'' ngữ nghĩa hẹp, và dense embedding của token được xem là superposition của nhiều khái niệm như vậy; nhiệm vụ của SAE là tách các khái niệm đó ra thành các chiều riêng. Với truy hồi, điều quan trọng là hai token gần nghĩa sẽ kích hoạt chung một số neuron, nên một neuron hoạt động đóng vai trò như một pseudo-token, tương tự một từ khóa trong BM25. Vì số neuron bật cho mỗi token rất nhỏ ($K=32$ trên $h=16.384$, khoảng 0,2\%), mỗi neuron chỉ xuất hiện ở một phần nhỏ token, đủ để xây inverted index. Bảng~\ref{tab:dense-sparse} đối chiếu hai cách biểu diễn, Hình~\ref{fig:tokenflow} mô tả luồng biến đổi một token.
 
 \begin{table}[htbp]
 \centering
-\caption{So sánh biểu diễn dense của ColBERT và biểu diễn thưa của \ssr.}
+\caption{So sánh biểu diễn dense của ColBERT và biểu diễn sparse của \ssr.}
 \label{tab:dense-sparse}
 \small
 \begin{tabular}{p{5.2cm}p{3.6cm}p{4.4cm}}
@@ -613,9 +613,9 @@ $d$ & $h$ & $K$ & $k_{\mathrm{aux}}$ & Optimizer & lr & Batch & Epoch & Warmup &
 \end{tabular}
 \end{table}
 
-\section{Late interaction trên không gian thưa}
+\section{Late interaction trên không gian sparse}
 \label{sec:sparse-maxsim}
-Điểm liên quan trong \ssr\ là một biến thể thưa của MaxSim. Gọi $\AK(\bz)$ là tập \emph{chỉ số} của $K$ neuron có giá trị lớn nhất trong $\bz$. Với mỗi token truy vấn, thay vì lấy cực đại trên các token tài liệu theo tích vô hướng đầy đủ, ta chỉ cộng trên tập neuron hoạt động chung:
+Điểm liên quan trong \ssr\ là một biến thể sparse của MaxSim. Gọi $\AK(\bz)$ là tập \emph{chỉ số} của $K$ neuron có giá trị lớn nhất trong $\bz$. Với mỗi token truy vấn, thay vì lấy cực đại trên các token tài liệu theo tích vô hướng đầy đủ, ta chỉ cộng trên tập neuron hoạt động chung:
 \begin{equation}
 S(Q,D)=\sum_{i=1}^{N}\max_{j=1}^{M}\Bigg(\sum_{u\in\AK(\bz_{q_i})\cap\AK(\bz_{d_j})} z^{(u)}_{q_i}\, z^{(u)}_{d_j}\Bigg).
 \label{eq:ssr}
@@ -624,7 +624,7 @@ S(Q,D)=\sum_{i=1}^{N}\max_{j=1}^{M}\Bigg(\sum_{u\in\AK(\bz_{q_i})\cap\AK(\bz_{d_
 
 \begin{table}[htbp]
 \centering
-\caption{Ví dụ tính tay điểm thưa cho token truy vấn $q_1$ với hai token tài liệu.}
+\caption{Ví dụ tính tay điểm sparse cho token truy vấn $q_1$ với hai token tài liệu.}
 \label{tab:example}
 \small
 \begin{tabular}{ll}
@@ -646,7 +646,7 @@ Với ví dụ ở Bảng~\ref{tab:example}, token $q_1$ khớp với $d_1$ ch�
 
 \section{Cận sai lệch so với điểm dense}
 \label{sec:theory}
-Phần này trả lời câu hỏi: khi thay tích vô hướng dense bằng tích vô hướng thưa thì sai số là bao nhiêu. Nội dung dựa trên Phụ lục A của bài báo; chứng minh chi tiết được đưa vào Phụ lục~\ref{app:proofs} của báo cáo.
+Phần này trả lời câu hỏi: khi thay tích vô hướng dense bằng tích vô hướng sparse thì sai số là bao nhiêu. Nội dung dựa trên Phụ lục A của bài báo; chứng minh chi tiết được đưa vào Phụ lục~\ref{app:proofs} của báo cáo.
 
 \subsection{Thiết lập và giả thiết}
 Gọi $\bx,\by\in\Rb^{d}$ là hai dense embedding (đã tâm hóa, tức gộp $\bpre$ vào embedding), $\bz_x,\bz_y\in\Rb^{h}$ là sparse code TopK tương ứng, và $\hat\bx=\Wdec\bz_x$, $\hat\by=\Wdec\bz_y$ là các vector tái tạo. Hai điểm số được so sánh là
@@ -654,7 +654,7 @@ Gọi $\bx,\by\in\Rb^{d}$ là hai dense embedding (đã tâm hóa, tức gộp $
 S_{\mathrm{dense}}(Q,D)&=\sum_{i=1}^{N}\max_{j}\,\bq_i^\top\bd_j, \label{eq:sdense}\\
 S_{\mathrm{SSR}}(Q,D)&=\sum_{i=1}^{N}\max_{j}\,\bz_{q_i}^\top\bz_{d_j}, \label{eq:sssr}
 \end{align}
-trong đó $\bz_{q_i}^\top\bz_{d_j}$ đúng bằng tổng trong ngoặc của \eqref{eq:ssr}, vì các thành phần ngoài phần giao đều bằng không. Phân tích dựa trên bốn giả thiết ở Bảng~\ref{tab:assump}; Giả thiết 3 có nghĩa là với mọi vector thưa $\mathbf{a},\mathbf{b}$ có support nằm trong $S$: $|\mathbf{a}^\top(\Wdec^\top\Wdec-\mathbf{I})\mathbf{b}|\le\delta\|\mathbf{a}\|_2\|\mathbf{b}\|_2$.
+trong đó $\bz_{q_i}^\top\bz_{d_j}$ đúng bằng tổng trong ngoặc của \eqref{eq:ssr}, vì các thành phần ngoài phần giao đều bằng không. Phân tích dựa trên bốn giả thiết ở Bảng~\ref{tab:assump}; Giả thiết 3 có nghĩa là với mọi vector sparse $\mathbf{a},\mathbf{b}$ có support nằm trong $S$: $|\mathbf{a}^\top(\Wdec^\top\Wdec-\mathbf{I})\mathbf{b}|\le\delta\|\mathbf{a}\|_2\|\mathbf{b}\|_2$.
 
 \begin{table}[htbp]
 \centering
@@ -665,7 +665,7 @@ trong đó $\bz_{q_i}^\top\bz_{d_j}$ đúng bằng tổng trong ngoặc của \e
 \toprule
 \textbf{\#} & \textbf{Giả thiết} & \textbf{Công thức} & \textbf{Ý nghĩa}\\
 \midrule
-1 & Tái tạo trung thực & $\|\bx-\hat\bx\|_2\le\epsilon$, $\|\by-\hat\by\|_2\le\epsilon$ & SAE tái tạo tốt embedding gốc\\
+1 & Reconstruction trung thực & $\|\bx-\hat\bx\|_2\le\epsilon$, $\|\by-\hat\by\|_2\le\epsilon$ & SAE tái tạo tốt embedding gốc\\
 2 & Chuẩn embedding bị chặn & $\|\bx\|_2\le B$, $\|\by\|_2\le B$ & Embedding không quá lớn\\
 3 & Decoder gần trực giao trên tập hoạt động $S=\supp(\bz_x)\cup\supp(\bz_y)$ & $\big\|(\Wdec^\top\Wdec-\mathbf{I})\big\|_{S\to S}\le\delta$ & Các cột decoder của neuron đang bật gần như vuông góc, tức mỗi neuron là một hướng độc lập\\
 4 & Chuẩn sparse code bị chặn & $\|\bz_x\|_2\le C$, $\|\bz_y\|_2\le C$ & Dùng để thu được cận đều theo mọi token\\
@@ -682,7 +682,7 @@ Với các Giả thiết 1--3, tích vô hướng của hai dense embedding và 
 \end{equation}
 Nếu Giả thiết 4 cũng đúng thì vế phải không vượt quá $2B\epsilon+\epsilon^2+\delta C^2$.
 \end{dinhlyA}
-Vế phải của \eqref{eq:thmA} gồm hai thành phần: sai số tái tạo của SAE ($2B\epsilon+\epsilon^2$) và sai số hình học của decoder ($\delta\|\bz_x\|\|\bz_y\|$), tương ứng với hai bước của chứng minh.
+Vế phải của \eqref{eq:thmA} gồm hai thành phần: sai số reconstruction của SAE ($2B\epsilon+\epsilon^2$) và sai số hình học của decoder ($\delta\|\bz_x\|\|\bz_y\|$), tương ứng với hai bước của chứng minh.
 \begin{dinhlyB}
 Giả sử các Giả thiết 1--4 đúng với mọi cặp token truy vấn và token tài liệu $(\bq_i,\bd_j)$ và đặt $\eta=2B\epsilon+\epsilon^2+\delta C^2$. Khi đó
 \begin{equation}
@@ -693,13 +693,13 @@ Giả sử các Giả thiết 1--4 đúng với mọi cặp token truy vấn và
 
 \subsection{Ý nghĩa và điều kiện áp dụng}
 \label{sec:theory-meaning}
-Cận \eqref{eq:thmB} nói rằng sai lệch điểm số bị kiểm soát bởi ba đại lượng có thể tối ưu trong huấn luyện: $\epsilon$ nhỏ nhờ reconstruction loss, $\delta$ nhỏ nhờ các neuron tách biệt, và $C$ bị chặn nhờ TopK. Đây là lý do hàm mục tiêu ở mục~\ref{sec:losses} cần thành phần tái tạo bên cạnh thành phần xếp hạng.
+Cận \eqref{eq:thmB} nói rằng sai lệch điểm số bị kiểm soát bởi ba đại lượng có thể tối ưu trong huấn luyện: $\epsilon$ nhỏ nhờ reconstruction loss, $\delta$ nhỏ nhờ các neuron tách biệt, và $C$ bị chặn nhờ TopK. Đây là lý do hàm mục tiêu ở mục~\ref{sec:losses} cần thành phần reconstruction bên cạnh thành phần xếp hạng.
 
-Khi đọc cận này cần chú ý vài điểm. Cận tăng tuyến tính theo độ dài truy vấn $N$; đây là cận trên cho sai lệch \emph{điểm số}, không phải khẳng định về chất lượng xếp hạng với truy vấn dài, vì khoảng cách điểm giữa các tài liệu cũng thay đổi theo $N$. Với bài toán xếp hạng, điều cần bảo toàn là \emph{thứ tự}: nếu điểm của mỗi tài liệu sai lệch tối đa $N\eta$, thì hai tài liệu có điểm dense cách nhau hơn $2N\eta$ sẽ giữ nguyên thứ tự khi chấm bằng điểm thưa. Đây là điều kiện đủ, không phải điều kiện cần, và các cặp tài liệu có điểm dense gần nhau có thể đổi chỗ. Bài báo không đo $\epsilon$ và $\delta$ của SAE đã huấn luyện, nên cận chưa được kiểm chứng định lượng và có thể khá lỏng so với thực tế. Thực nghiệm của nhóm trên checkpoint công bố cho thấy tích vô hướng giữa các token thưa khá nhỏ (ngưỡng để lọt top-100 chỉ khoảng 0,22--0,32 cho mỗi token truy vấn), nên các cận trên dùng cho pruning cũng rất lỏng; mục~\ref{sec:opt-failed} phân tích kỹ hơn.
+Khi đọc cận này cần chú ý vài điểm. Cận tăng tuyến tính theo độ dài truy vấn $N$; đây là cận trên cho sai lệch \emph{điểm số}, không phải khẳng định về chất lượng xếp hạng với truy vấn dài, vì khoảng cách điểm giữa các tài liệu cũng thay đổi theo $N$. Với bài toán xếp hạng, điều cần bảo toàn là \emph{thứ tự}: nếu điểm của mỗi tài liệu sai lệch tối đa $N\eta$, thì hai tài liệu có điểm dense cách nhau hơn $2N\eta$ sẽ giữ nguyên thứ tự khi chấm bằng điểm sparse. Đây là điều kiện đủ, không phải điều kiện cần, và các cặp tài liệu có điểm dense gần nhau có thể đổi chỗ. Bài báo không đo $\epsilon$ và $\delta$ của SAE đã huấn luyện, nên cận chưa được kiểm chứng định lượng và có thể khá lỏng so với thực tế. Thực nghiệm của nhóm trên checkpoint công bố cho thấy tích vô hướng giữa các token sparse khá nhỏ (ngưỡng để lọt top-100 chỉ khoảng 0,22--0,32 cho mỗi token truy vấn), nên các cận trên dùng cho pruning cũng rất lỏng; mục~\ref{sec:opt-failed} phân tích kỹ hơn.
 
-\section{Hàm mục tiêu huấn luyện lai}
+\section{Hàm mục tiêu hybrid training}
 \label{sec:losses}
-Sparse projector phải thỏa mãn hai yêu cầu có phần đối lập. Yêu cầu \emph{tái tạo}: sparse code giữ đủ thông tin của embedding gốc để $\epsilon$ nhỏ. Yêu cầu \emph{phân biệt}: sparse code đủ đặc trưng để xếp hạng tài liệu liên quan cao hơn tài liệu không liên quan, điều mà chỉ tối ưu tái tạo không bảo đảm, bởi hai embedding hoàn toàn có thể được tái tạo tốt mà không chia sẻ neuron nào. Vì vậy quá trình huấn luyện là \emph{huấn luyện lai}: vừa không giám sát (tái tạo) vừa có giám sát (xếp hạng). Hình~\ref{fig:trainflow} tổng quan quá trình này.
+Sparse projector phải thỏa mãn hai yêu cầu có phần đối lập. Yêu cầu \emph{reconstruction}: sparse code giữ đủ thông tin của embedding gốc để $\epsilon$ nhỏ. Yêu cầu \emph{phân biệt}: sparse code đủ đặc trưng để xếp hạng tài liệu liên quan cao hơn tài liệu không liên quan, điều mà chỉ tối ưu reconstruction không bảo đảm, bởi hai embedding hoàn toàn có thể được tái tạo tốt mà không chia sẻ neuron nào. Vì vậy quá trình huấn luyện là \emph{hybrid training}: vừa không giám sát (reconstruction) vừa có giám sát (xếp hạng). Hình~\ref{fig:trainflow} tổng quan quá trình này.
 
 \begin{figure}[htbp]
 \centering
@@ -713,19 +713,19 @@ Sparse projector phải thỏa mãn hai yêu cầu có phần đối lập. Yêu
 \node[grn, below=of x] (enc) {Encoder + TopK};
 \node[box, below=of enc] (z) {Sparse code $\bz$};
 \node[grn, below=of z] (dec) {Decoder};
-\node[box, below=of dec] (hat) {Tái tạo $\hat\bx$};
+\node[box, below=of dec] (hat) {Reconstruction $\hat\bx$};
 \draw[->] (x)--(enc); \draw[->] (enc)--(z); \draw[->] (z)--(dec); \draw[->] (dec)--(hat);
 \node[los, left=of z] (l3) {$\beta\,\mathcal{L}_{\mathrm{cl}}$: contrastive\\giữa các token trong batch};
 \node[los, left=of dec] (l2) {$\alpha\,\mathcal{L}_{\mathrm{aux}}$: neuron chết\\tái tạo residual $\bx-\hat\bx$};
 \node[los, left=of hat] (l1) {$\mathcal{L}_{\mathrm{recon}}(k)+\tfrac18\mathcal{L}_{\mathrm{recon}}(4k)$\\so $\hat\bx$ với $\bx$};
-\node[los, right=of z] (l4) {$\gamma\,\mathcal{L}_{\mathrm{CE}}$: MaxSim thưa\\truy vấn với tài liệu dương\\và hard negative BM25};
+\node[los, right=of z] (l4) {$\gamma\,\mathcal{L}_{\mathrm{CE}}$: sparse MaxSim\\truy vấn với tài liệu dương\\và hard negative BM25};
 \draw[->, gray] (z.west) -- (l3.east);
 \draw[->, gray] (z.east) -- (l4.west);
 \draw[->, gray] (hat.west) -- (l1.east);
 \draw[->, gray] (hat.west) -- ++(-0.5,0) |- (l2.east);
 \node[draw, rounded corners=2pt, fill=gray!10, font=\footnotesize\bfseries, below=5mm of hat, minimum width=34mm] (tot) {$\mathcal{L}_{\mathrm{SSR}}=\mathcal{L}_{\mathrm{unsup}}+\gamma\mathcal{L}_{\mathrm{CE}}$};
 \end{tikzpicture}
-\caption[Tổng quan quá trình huấn luyện SAE trong \ssr]{Tổng quan quá trình huấn luyện SAE trong \ssr: embedding token từ backbone đi qua encoder và toán tử TopK để tạo sparse code, sau đó được giải mã; hàm mục tiêu gồm bốn nhóm thành phần: tái tạo, chống neuron chết, contrastive giữa các token và contrastive giữa truy vấn và tài liệu.}
+\caption[Tổng quan quá trình huấn luyện SAE trong \ssr]{Tổng quan quá trình huấn luyện SAE trong \ssr: embedding token từ backbone đi qua encoder và toán tử TopK để tạo sparse code, sau đó được giải mã; hàm mục tiêu gồm bốn nhóm thành phần: reconstruction, chống neuron chết, contrastive giữa các token và contrastive giữa truy vấn và tài liệu.}
 \label{fig:trainflow}
 \end{figure}
 
@@ -738,7 +738,7 @@ Hàm loss không giám sát gồm bốn thành phần (công thức (7) của b�
 
 \paragraph{Reconstruction loss $\mathcal{L}_{\mathrm{recon}}(k)$} buộc SAE giữ thông tin của embedding gốc khi chỉ cho phép $k$ neuron hoạt động, trực tiếp làm giảm $\epsilon$ trong Định lý A.
 
-\paragraph{Multi-TopK $\tfrac18\mathcal{L}_{\mathrm{recon}}(4k)$} yêu cầu SAE tái tạo tốt cả khi giữ $4K=128$ neuron. Nhờ vậy các neuron ngoài top-$K$ vẫn được học, và có thể thay đổi $K$ lúc suy luận mà không phải huấn luyện lại; đây là nền tảng cho các thí nghiệm $K$ thích ứng của bài (Phụ lục~\ref{app:paper}). Hệ số $\tfrac18$ giữ cho thành phần này không lấn át số hạng tái tạo chính.
+\paragraph{Multi-TopK $\tfrac18\mathcal{L}_{\mathrm{recon}}(4k)$} yêu cầu SAE tái tạo tốt cả khi giữ $4K=128$ neuron. Nhờ vậy các neuron ngoài top-$K$ vẫn được học, và có thể thay đổi $K$ lúc suy luận mà không phải huấn luyện lại; đây là nền tảng cho các thí nghiệm $K$ thích ứng của bài (Phụ lục~\ref{app:paper}). Hệ số $\tfrac18$ giữ cho thành phần này không lấn át số hạng reconstruction chính.
 
 \paragraph{Auxiliary loss $\mathcal{L}_{\mathrm{aux}}(k_{\mathrm{aux}})$} chống neuron chết (dead latent), tức neuron lâu ngày không lọt vào TopK nên không bao giờ được cập nhật. Thành phần này chọn $k_{\mathrm{aux}}=2.048$ neuron ``chết lâu nhất'' để tái tạo residual $\mathbf{e}=\bx-\hat\bx$, buộc chúng học thông tin hữu ích. Với \ssr, hậu quả của neuron chết mang tính hệ thống: neuron không bao giờ hoạt động có posting list rỗng, còn neuron quá phổ biến có posting list quá dài và làm chậm truy vấn; $\mathcal{L}_{\mathrm{aux}}$ vì vậy còn giúp cân bằng chỉ mục.
 
@@ -747,14 +747,14 @@ Hàm loss không giám sát gồm bốn thành phần (công thức (7) của b�
 \mathcal{L}_{\mathrm{cl}}=-\frac{1}{|\mathcal{B}|}\sum_{i=1}^{|\mathcal{B}|}\log\frac{e^{\bz_i^\top\bz_i}}{e^{\bz_i^\top\bz_i}+\sum_{j\ne i}e^{\bz_i^\top\bz_j}},
 \label{eq:cl}
 \end{equation}
-trong đó $\mathcal{B}$ là tập mọi token trong batch. Thành phần này đẩy sparse code của các token khác nhau ra xa nhau, tránh hiện tượng mọi token cùng bật một nhóm neuron (sụp đổ biểu diễn); phân bố neuron đều hơn cũng làm các posting list cân bằng về độ dài.
+trong đó $\mathcal{B}$ là tập mọi token trong batch. Thành phần này đẩy sparse code của các token khác nhau ra xa nhau, tránh hiện tượng mọi token cùng bật một nhóm neuron (representation collapse); phân bố neuron đều hơn cũng làm các posting list cân bằng về độ dài.
 
 \subsection{Supervised contrastive loss $\mathcal{L}_{\mathrm{CE}}$ và hàm mục tiêu tổng}
 \begin{equation}
 \mathcal{L}_{\mathrm{CE}}=-\log\frac{\exp\big(\simscore(Q,D^+)/\tau\big)}{\sum_{D\in\mathcal{D}_{\mathcal{B}}}\exp\big(\simscore(Q,D)/\tau\big)} .
 \label{eq:ce}
 \end{equation}
-Mỗi batch $\mathcal{D}_{\mathcal{B}}$ gồm một tài liệu dương $D^+$ và các tài liệu âm; tài liệu âm là \emph{hard negative} lấy bằng BM25 trên MS~MARCO, tức những tài liệu khớp từ vựng nhưng sai về ngữ nghĩa, buộc mô hình học khác biệt tinh tế. Hàm $\simscore(\cdot)$ là MaxSim thưa theo \eqref{eq:ssr} với $\mathbb{E}_{\mathrm{tok}}$ và là độ tương đồng cosine với $\mathbb{E}_{[\mathrm{CLS}]}$. $\mathcal{L}_{\mathrm{CE}}$ đưa tín hiệu ``truy vấn nào khớp tài liệu nào'' vào sparse code, điều mà tái tạo không thể bảo đảm. Công thức (9) trong bài không có nhiệt độ $\tau$; theo tác giả trả lời trên GitHub, giá trị thực dùng là $\tau=0{,}3$ (mục~\ref{sec:train-code}). Hàm mục tiêu tổng là
+Mỗi batch $\mathcal{D}_{\mathcal{B}}$ gồm một tài liệu dương $D^+$ và các tài liệu âm; tài liệu âm là \emph{hard negative} lấy bằng BM25 trên MS~MARCO, tức những tài liệu khớp từ vựng nhưng sai về ngữ nghĩa, buộc mô hình học khác biệt tinh tế. Hàm $\simscore(\cdot)$ là sparse MaxSim theo \eqref{eq:ssr} với $\mathbb{E}_{\mathrm{tok}}$ và là độ tương đồng cosine với $\mathbb{E}_{[\mathrm{CLS}]}$. $\mathcal{L}_{\mathrm{CE}}$ đưa tín hiệu ``truy vấn nào khớp tài liệu nào'' vào sparse code, điều mà reconstruction không thể bảo đảm. Công thức (9) trong bài không có nhiệt độ $\tau$; theo tác giả trả lời trên GitHub, giá trị thực dùng là $\tau=0{,}3$ (mục~\ref{sec:train-code}). Hàm mục tiêu tổng là
 \begin{equation}
 \mathcal{L}_{\mathrm{SSR}}=\mathcal{L}_{\mathrm{unsup}}+\gamma\,\mathcal{L}_{\mathrm{CE}},\qquad \gamma=0{,}05 .
 \label{eq:total}
@@ -773,7 +773,7 @@ Bảng~\ref{tab:losses-role} tổng hợp vai trò của từng thành phần.
 $\mathcal{L}_{\mathrm{recon}}(k)$ & Không giám sát & 1 & Giữ thông tin & $\epsilon$ nhỏ (Định lý A)\\
 $\mathcal{L}_{\mathrm{recon}}(4k)$ & Không giám sát & 1/8 & Linh hoạt $K$ & $K$ thích ứng lúc suy luận\\
 $\mathcal{L}_{\mathrm{aux}}$ & Không giám sát & $\alpha=1/32$ & Chống neuron chết & Posting list cân bằng\\
-$\mathcal{L}_{\mathrm{cl}}$ & Không giám sát & $\beta=0{,}1$ & Đa dạng sparse code & Tránh sụp đổ biểu diễn\\
+$\mathcal{L}_{\mathrm{cl}}$ & Không giám sát & $\beta=0{,}1$ & Đa dạng sparse code & Tránh representation collapse\\
 $\mathcal{L}_{\mathrm{CE}}$ & Có giám sát & $\gamma=0{,}05$ & Khả năng xếp hạng & Mục tiêu truy hồi\\
 \bottomrule
 \end{tabular}
@@ -781,7 +781,7 @@ $\mathcal{L}_{\mathrm{CE}}$ & Có giám sát & $\gamma=0{,}05$ & Khả năng x�
 
 \section{Vai trò của từng thành phần theo ablation của bài báo}
 \label{sec:ablation}
-Bảng~\ref{tab:ablation} là kết quả ablation của bài báo với $K=32$, đo \ndcg\ trung bình trên BEIR. Đường cơ sở chỉ tái tạo đạt 46,4 (\ssr-tok) và 46,7 (\ssr-CLS). Thêm $\mathcal{L}_{\mathrm{aux}}$ tăng lần lượt 1,1 và 1,9 điểm; thêm $\mathcal{L}_{\mathrm{cl}}$ tăng tiếp 0,7 và 0,9 điểm; thêm $\mathcal{L}_{\mathrm{CE}}$ đưa điểm lên 52,9 và 53,4. $\mathcal{L}_{\mathrm{CE}}$ là thành phần đóng góp lớn nhất, khoảng 4,7 điểm cho \ssr-tok và 3,9 điểm cho \ssr-CLS.
+Bảng~\ref{tab:ablation} là kết quả ablation của bài báo với $K=32$, đo \ndcg\ trung bình trên BEIR. Đường cơ sở chỉ có reconstruction đạt 46,4 (\ssr-tok) và 46,7 (\ssr-CLS). Thêm $\mathcal{L}_{\mathrm{aux}}$ tăng lần lượt 1,1 và 1,9 điểm; thêm $\mathcal{L}_{\mathrm{cl}}$ tăng tiếp 0,7 và 0,9 điểm; thêm $\mathcal{L}_{\mathrm{CE}}$ đưa điểm lên 52,9 và 53,4. $\mathcal{L}_{\mathrm{CE}}$ là thành phần đóng góp lớn nhất, khoảng 4,7 điểm cho \ssr-tok và 3,9 điểm cho \ssr-CLS.
 
 \begin{table}[htbp]
 \centering
@@ -800,7 +800,7 @@ $\alpha$ & $\beta$ & $\gamma$ & \textbf{\ssr-tok} & \textbf{\ssr-CLS}\\
 \end{tabular}
 \end{table}
 
-Khảo sát độ nhạy của bài (Bảng~\ref{tab:sens}, Phụ lục~\ref{app:paper}) cho thấy $\gamma$ là trọng số nhạy nhất: tăng lên 0,2 làm chất lượng giảm khoảng 5 điểm, vì $\mathcal{L}_{\mathrm{CE}}$ lấn át tái tạo và $\epsilon$ tăng, khớp với Định lý A; $\alpha$ và $\beta$ ít nhạy hơn, dao động không quá hai điểm. Bài báo chưa làm ablation riêng cho $\mathcal{L}_{\mathrm{recon}}(4k)$, trong khi đây lại là thành phần bị thiếu trong mã nguồn công bố. Nhóm giữ nguyên cấu hình Bảng~\ref{tab:hyper} khi đọc checkpoint và không khảo sát lại các trọng số vì không huấn luyện lại.
+Khảo sát độ nhạy của bài (Bảng~\ref{tab:sens}, Phụ lục~\ref{app:paper}) cho thấy $\gamma$ là trọng số nhạy nhất: tăng lên 0,2 làm chất lượng giảm khoảng 5 điểm, vì $\mathcal{L}_{\mathrm{CE}}$ lấn át reconstruction và $\epsilon$ tăng, khớp với Định lý A; $\alpha$ và $\beta$ ít nhạy hơn, dao động không quá hai điểm. Bài báo chưa làm ablation riêng cho $\mathcal{L}_{\mathrm{recon}}(4k)$, trong khi đây lại là thành phần bị thiếu trong mã nguồn công bố. Nhóm giữ nguyên cấu hình Bảng~\ref{tab:hyper} khi đọc checkpoint và không khảo sát lại các trọng số vì không huấn luyện lại.
 
 \section{Đối chiếu thiết lập huấn luyện với mã nguồn công bố}
 \label{sec:train-code}
@@ -911,17 +911,17 @@ Tổng cộng có $h=16.384$ danh sách. Thuật toán~\ref{alg:index} mô tả 
 \label{sec:ssr-exact}
 Với mỗi token truy vấn $\bq_i$, hệ thống lấy tập $K=32$ neuron hoạt động $\AK(\bq_i)$, duyệt hợp của $N\times K$ posting list mức token, tích lũy điểm theo từng cặp (tài liệu, token tài liệu), lấy max theo token rồi cộng theo token truy vấn theo đúng \eqref{eq:ssr}. Ưu điểm là chính xác và chỉ cần một giai đoạn. Nhược điểm là $N\times K$ danh sách vẫn khá nhiều: trên MS~MARCO, theo bài báo \ssr\ chạm tới khoảng 54.278 ứng viên và mất 38,6 ms mỗi truy vấn.
 
-\section{Truy hồi từ thô đến tinh (\ssrpp)}
+\section{Truy hồi coarse-to-fine (\ssrpp)}
 \label{sec:ssrpp}
-\ssrpp\ giảm chi phí bằng cách chia truy hồi thành hai bước (Thuật toán~\ref{alg:ssrpp}, Hình~\ref{fig:ssrppflow}). Bước thô chấm điểm xấp xỉ trên posting mức tài liệu:
+\ssrpp\ giảm chi phí bằng cách chia truy hồi thành hai bước (Thuật toán~\ref{alg:ssrpp}, Hình~\ref{fig:ssrppflow}). Bước thô (coarse scoring) chấm điểm xấp xỉ trên posting mức tài liệu:
 \begin{equation}
 \hat S_{\mathrm{coarse}}(Q,D)=\sum_{i=1}^{N}\sum_{u\in\mathcal{A}_{K_{\mathrm{coarse}}}(\bq_i)} q_i^{(u)}\,\mu_{D,u} ,
 \label{eq:coarse}
 \end{equation}
-chỉ dùng $K_{\mathrm{coarse}}=4$ neuron lớn nhất của mỗi token truy vấn. Kết quả là tập ứng viên $\mathcal{C}_1$ gồm 2.000 tài liệu có điểm thô cao nhất (Phụ lục D.1 của bài). Bước tinh dùng đủ $K=32$ neuron và tính MaxSim thưa theo \eqref{eq:ssr} trên $\mathcal{C}_1$ để có thứ hạng cuối cùng, nên phép tính tốn kém chỉ áp dụng cho một phần nhỏ kho.
+chỉ dùng $K_{\mathrm{coarse}}=4$ neuron lớn nhất của mỗi token truy vấn. Kết quả là tập ứng viên $\mathcal{C}_1$ gồm 2.000 tài liệu có điểm thô cao nhất (Phụ lục D.1 của bài). Bước tinh (fine re-scoring) dùng đủ $K=32$ neuron và tính sparse MaxSim theo \eqref{eq:ssr} trên $\mathcal{C}_1$ để có thứ hạng cuối cùng, nên phép tính tốn kém chỉ áp dụng cho một phần nhỏ kho.
 
 \begin{algorithm}[htbp]
-\caption{\ssrpp: truy hồi từ thô đến tinh}
+\caption{\ssrpp: truy hồi coarse-to-fine}
 \label{alg:ssrpp}
 \begin{algorithmic}[1]
 \Require truy vấn $Q$, chỉ mục $\{\mathcal{I}_u,U_B\}$, forward index, $K_{\mathrm{coarse}}=4$, $|\mathcal{C}_1|=2000$, $K=32$
@@ -956,7 +956,7 @@ chỉ dùng $K_{\mathrm{coarse}}=4$ neuron lớn nhất của mỗi token truy v
 \node[grn, right=of q] (s) {SAE: 32 neuron\\mỗi token};
 \node[org, right=of s] (c) {Bước 1 (thô): 4 neuron mỗi token,\\posting $\mu$, bỏ block theo $U_B$};
 \node[box, right=of c] (t) {$\mathcal{C}_1$:\\top-2.000};
-\node[red, right=of t] (f) {Bước 2 (tinh): đủ 32 neuron,\\MaxSim thưa trên $\mathcal{C}_1$};
+\node[red, right=of t] (f) {Bước 2 (tinh): đủ 32 neuron,\\sparse MaxSim trên $\mathcal{C}_1$};
 \node[box, right=of f] (k) {Top-$k$};
 \draw[->] (q)--(s); \draw[->] (s)--(c); \draw[->] (c)--(t); \draw[->] (t)--(f); \draw[->] (f)--(k);
 \end{tikzpicture}}
@@ -992,7 +992,7 @@ trong đó $L_{\mathrm{skip}}$ là số phần tử thực sự phải duyệt s
 \midrule
 PLAID & Tìm centroid gần nhất cho $N$ token, gom tài liệu & MaxSim dense $O(N\cdot M\cdot d)$ trên ứng viên sau giải nén\\
 \ssr & Duyệt $N\cdot K$ danh sách mức token, độ dài trung bình $\bar L_{\mathrm{tok}}$ & Gộp max/sum ngay khi duyệt; chi phí mỗi cặp token bị chặn bởi $K$\\
-\ssrpp & Duyệt $N\cdot K_{\mathrm{coarse}}$ danh sách mức tài liệu, bỏ block theo cận trên & MaxSim thưa trên 2.000 ứng viên bằng forward index\\
+\ssrpp & Duyệt $N\cdot K_{\mathrm{coarse}}$ danh sách mức tài liệu, bỏ block theo cận trên & sparse MaxSim trên 2.000 ứng viên bằng forward index\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1034,7 +1034,7 @@ Chương này là phần thực hành của nhóm. Mục~\ref{sec:paper-claims} 
 
 \section{Những kết quả công bố cần kiểm chứng}
 \label{sec:paper-claims}
-Bài báo đánh giá trên 13 tập BEIR~\cite{beir} (zero-shot) và MS~MARCO passage~\cite{msmarco} (in-domain), so với các hệ dense MVR (ColBERT, ColBERTv2, PLAID, COIL, AligneR, CITADEL, XTR) và các hệ thưa học được (SPLADE-v2, SPLADE-v3), tất cả huấn luyện trên MS~MARCO với hard negative từ BM25. Cấu hình \ssr\ dùng backbone BERT-base-uncased, $K=32$, $h=16.384$, độ dài truy vấn tối đa 32; \ssrpp\ dùng block 64, $K_{\mathrm{coarse}}=4$ và 2.000 ứng viên. Độ trễ được đo bằng ms/truy vấn trên GPU A100 40~GB sau 1.000 truy vấn khởi động; trừ khi ghi rõ, độ trễ của \ssr-tok và \ssr-CLS trong các bảng là của \ssrpp. Danh sách tập dữ liệu và các kết quả về LLM backbone, LoTTE, LIMIT, độ nhạy $h$/$K$ nằm ở Phụ lục~\ref{app:paper}.
+Bài báo đánh giá trên 13 tập BEIR~\cite{beir} (zero-shot) và MS~MARCO passage~\cite{msmarco} (in-domain), so với các hệ dense MVR (ColBERT, ColBERTv2, PLAID, COIL, AligneR, CITADEL, XTR) và các hệ learned sparse retrieval (SPLADE-v2, SPLADE-v3), tất cả huấn luyện trên MS~MARCO với hard negative từ BM25. Cấu hình \ssr\ dùng backbone BERT-base-uncased, $K=32$, $h=16.384$, độ dài truy vấn tối đa 32; \ssrpp\ dùng block 64, $K_{\mathrm{coarse}}=4$ và 2.000 ứng viên. Độ trễ được đo bằng ms/truy vấn trên GPU A100 40~GB sau 1.000 truy vấn khởi động; trừ khi ghi rõ, độ trễ của \ssr-tok và \ssr-CLS trong các bảng là của \ssrpp. Danh sách tập dữ liệu và các kết quả về LLM backbone, LoTTE, LIMIT, độ nhạy $h$/$K$ nằm ở Phụ lục~\ref{app:paper}.
 
 \subsection{Chất lượng trên BEIR và MS~MARCO}
 Bảng~\ref{tab:main-summary} trích từ Bảng 1 của bài (bản arXiv v3) các phương pháp và tập dữ liệu liên quan đến thực nghiệm của nhóm; bảng đầy đủ 13 tập là Bảng~\ref{tab:main-paper} ở Phụ lục~\ref{app:paper}. Hình~\ref{fig:overview} vẽ lại toàn bộ Bảng 1 dưới dạng chất lượng so với độ trễ. Theo số liệu công bố, \ssr-CLS đạt trung bình cao nhất với 53,4, hơn SPLADE-v3 khoảng 2,2 điểm và hơn PLAID khoảng 4,1 điểm; \ssr-tok với 17,5 ms nhanh gần gấp đôi ColBERTv2 và PLAID; \ssr\ đứng đầu trên 9 trong 13 tập. \ssr\ thấp hơn SPLADE-v3 trên ArguAna và thấp hơn SPLADE-v2 trên Touché, hai tập có truy vấn tranh luận dài, nơi khớp từ vựng chính xác quan trọng hơn.
@@ -1238,7 +1238,7 @@ BM25 (Lucene) & TREC DL19 \ndcg & 50,6 (Anserini) & 50,72\\
 \end{tabular}
 \end{table}
 
-Riêng phép chấm điểm MaxSim thưa, phần dễ sai nhất (mục~\ref{sec:impl-notes}), được kiểm chứng bằng ba cách tính độc lập: MaxSim trên vector thưa dạng dense bằng PyTorch, một cài đặt bằng \texttt{scipy.sparse} viết riêng, và bản ``unblocked'' của repo sau khi sửa cùng lỗi. Cả ba trùng nhau tới $10^{-6}$ trên mọi cặp query và tài liệu của NFCorpus và SciFact.
+Riêng phép chấm điểm sparse MaxSim, phần dễ sai nhất (mục~\ref{sec:impl-notes}), được kiểm chứng bằng ba cách tính độc lập: MaxSim trên vector sparse dạng dense bằng PyTorch, một cài đặt bằng \texttt{scipy.sparse} viết riêng, và bản ``unblocked'' của repo sau khi sửa cùng lỗi. Cả ba trùng nhau tới $10^{-6}$ trên mọi cặp query và tài liệu của NFCorpus và SciFact.
 
 \section{Sai lệch mã nguồn và trạng thái xử lý}
 \label{sec:bugs}
@@ -1447,7 +1447,7 @@ Mục tiêu là giảm độ trễ của phép truy hồi exact theo \eqref{eq:s
   \item \textbf{Repo exact:} đường exact mặc định của repo, một luồng, corpus chia thành từng chunk 5.000 tài liệu và chỉ mục chunk được dựng lại ở mỗi lần chạy. Trên 100 query đầu của FiQA test, đường này mất 1.635 ms/query cho riêng phần chấm điểm (2.019 ms nếu tính cả dựng chunk), đỉnh RAM 5,24 GB.
   \item \textbf{Base exact:} cùng cấu trúc dữ liệu và kernel của repo nhưng dựng cho toàn corpus trong một chỉ mục, do nhóm dựng để có tham chiếu một luồng không phụ thuộc vào cách chia chunk. Trên cùng 100 query, đường này mất 2.332 ms/query; dựng chỉ mục mất 174 s cho posting token và thêm 107 s cho posting $\mu$, đỉnh RAM 24,45 GB.
 \end{itemize}
-Phân tích hai đường này cho thấy ba điểm tốn thời gian: buffer điểm theo (token, tài liệu) có kích thước $N\times 5000$ (hoặc $N\times|\mathcal{D}|$) không nằm trong cache; mỗi neuron của query được duyệt lại một lần cho mỗi token query chứa nó; và chỉ chạy một luồng. Hình~\ref{fig:optmap} đánh dấu các bước được tối ưu trong pipeline xử lý một query; Bảng~\ref{tab:optmap} liệt kê từng bước với cách làm của bản gốc và của bản tối ưu. Phần mã hóa query (BERT + SAE) và phần chọn top-$k$ giữ nguyên; biểu diễn thưa và công thức chấm điểm cũng giữ nguyên, nên mọi kết quả xếp hạng của đường exact trùng khớp với bản gốc.
+Phân tích hai đường này cho thấy ba điểm tốn thời gian: buffer điểm theo (token, tài liệu) có kích thước $N\times 5000$ (hoặc $N\times|\mathcal{D}|$) không nằm trong cache; mỗi neuron của query được duyệt lại một lần cho mỗi token query chứa nó; và chỉ chạy một luồng. Hình~\ref{fig:optmap} đánh dấu các bước được tối ưu trong pipeline xử lý một query; Bảng~\ref{tab:optmap} liệt kê từng bước với cách làm của bản gốc và của bản tối ưu. Phần mã hóa query (BERT + SAE) và phần chọn top-$k$ giữ nguyên; biểu diễn sparse và công thức chấm điểm cũng giữ nguyên, nên mọi kết quả xếp hạng của đường exact trùng khớp với bản gốc.
 
 \begin{figure}[htbp]
 \centering
@@ -1653,10 +1653,10 @@ SciFact train & 0,32 & $t=8$ neuron & 98,3\% & 0,37\\
 \label{sec:discussion}
 \subsection{Điểm mạnh của phương pháp}
 \begin{itemize}[leftmargin=1.5cm]
-  \item \textbf{Ý tưởng đơn giản, tận dụng cấu trúc dữ liệu sẵn có:} biểu diễn thưa TopK biến mỗi neuron thành một ``từ'', cho phép dùng inverted index mà vẫn giữ tương tác giữa các token của ColBERT; không cần K-means, codebook hay giải nén residual.
+  \item \textbf{Ý tưởng đơn giản, tận dụng cấu trúc dữ liệu sẵn có:} biểu diễn sparse TopK biến mỗi neuron thành một ``từ'', cho phép dùng inverted index mà vẫn giữ tương tác giữa các token của ColBERT; không cần K-means, codebook hay giải nén residual.
   \item \textbf{Chỉ mục cập nhật được:} thêm tài liệu chỉ là thêm posting, không phụ thuộc vào codebook đã học.
-  \item \textbf{Tiềm năng tốc độ:} với kernel phù hợp, truy hồi exact đạt 54--59 ms/query trên CPU 12 luồng cho 57k tài liệu và dựng chỉ mục trong vài giây; biểu diễn thưa cũng cho phép xấp xỉ có kiểm soát (LB-rerank) gần như không mất chất lượng.
-  \item \textbf{Có phân tích lý thuyết:} cận sai lệch giữa MaxSim thưa và MaxSim dense (mục~\ref{sec:theory}) nối chất lượng biểu diễn với các đại lượng tối ưu được trong huấn luyện; phương pháp áp dụng cho cả BERT lẫn backbone LLM 8B.
+  \item \textbf{Tiềm năng tốc độ:} với kernel phù hợp, truy hồi exact đạt 54--59 ms/query trên CPU 12 luồng cho 57k tài liệu và dựng chỉ mục trong vài giây; biểu diễn sparse cũng cho phép xấp xỉ có kiểm soát (LB-rerank) gần như không mất chất lượng.
+  \item \textbf{Có phân tích lý thuyết:} cận sai lệch giữa sparse MaxSim và MaxSim dense (mục~\ref{sec:theory}) nối chất lượng biểu diễn với các đại lượng tối ưu được trong huấn luyện; phương pháp áp dụng cho cả BERT lẫn backbone LLM 8B.
 \end{itemize}
 
 \subsection{Hạn chế của bài báo và của checkpoint công bố}
@@ -1675,7 +1675,7 @@ Vì chỉ mục của \ssr\ là inverted index thông thường, phương pháp 
 \section{Kết luận và hướng phát triển}
 \label{sec:conclusion}
 \subsection{Kết luận theo từng câu hỏi kiểm chứng}
-Về cơ chế, báo cáo đã trình bày \ssr\ như một cách tổ chức MVR không cần K-means: chiếu token lên không gian thưa bằng TopK Sparse Autoencoder, dùng mỗi neuron hoạt động làm pseudo-token của inverted index, chấm điểm bằng MaxSim thưa với sai lệch so với điểm dense bị chặn bởi $\epsilon$, $\delta$ và $C$, và huấn luyện SAE với hàm mục tiêu lai trong đó $\mathcal{L}_{\mathrm{CE}}$ đóng góp lớn nhất. Bốn câu hỏi kiểm chứng ở mục~\ref{sec:goal} được trả lời như sau.
+Về cơ chế, báo cáo đã trình bày \ssr\ như một cách tổ chức MVR không cần K-means: chiếu token lên không gian sparse bằng TopK Sparse Autoencoder, dùng mỗi neuron hoạt động làm pseudo-token của inverted index, chấm điểm bằng sparse MaxSim với sai lệch so với điểm dense bị chặn bởi $\epsilon$, $\delta$ và $C$, và huấn luyện SAE với hàm mục tiêu hybrid training trong đó $\mathcal{L}_{\mathrm{CE}}$ đóng góp lớn nhất. Bốn câu hỏi kiểm chứng ở mục~\ref{sec:goal} được trả lời như sau.
 
 \textbf{(K1) Tái lập.} Mã nguồn công bố không tái lập được Bảng 1: với checkpoint công bố, mã gốc cho \ndcg\ 8,3 trên NFCorpus và 7,5 trên SciFact. Nhóm phát hiện 10 điểm sai lệch so với bài, đã xử lý 9 điểm bằng bản sửa hoặc bổ sung cấu hình (patch 16 file kèm unit test); sau sửa, checkpoint cho 43,97 và 87,83, cao hơn số trong bài. Cơ chế \texttt{token\_skip\_mode} chưa được triển khai và nhóm chưa huấn luyện lại, nên tái lập đầy đủ từ đầu vẫn chưa thực hiện được.
 
@@ -1787,7 +1787,7 @@ for qt in range(n_qt):                       # moi token query
     for i in range(n_docs):                               # SUM theo token query
         d = touched_docs[i]; doc_total[d] += doc_best[d]
 \end{lstlisting}
-Vì mọi giá trị sau TopK+ReLU đều không âm, các token tài liệu không chung neuron nào với token query đóng góp 0 và có thể bỏ qua mà không đổi kết quả max. Bản sửa được kiểm chứng bằng ba cách độc lập: (i) so với MaxSim tính trên vector thưa dạng dense bằng PyTorch (\texttt{reference\_maxsim\_dense}); (ii) so với một cài đặt bằng \texttt{scipy.sparse} viết riêng (\texttt{verify\_scipy.py}); (iii) so với bản ``unblocked'' của repo đã sửa cùng lỗi (\texttt{crosscheck.py}). Cả ba trùng nhau tới $10^{-6}$ trên mọi cặp query và tài liệu của NFCorpus và SciFact.
+Vì mọi giá trị sau TopK+ReLU đều không âm, các token tài liệu không chung neuron nào với token query đóng góp 0 và có thể bỏ qua mà không đổi kết quả max. Bản sửa được kiểm chứng bằng ba cách độc lập: (i) so với MaxSim tính trên vector sparse dạng dense bằng PyTorch (\texttt{reference\_maxsim\_dense}); (ii) so với một cài đặt bằng \texttt{scipy.sparse} viết riêng (\texttt{verify\_scipy.py}); (iii) so với bản ``unblocked'' của repo đã sửa cùng lỗi (\texttt{crosscheck.py}). Cả ba trùng nhau tới $10^{-6}$ trên mọi cặp query và tài liệu của NFCorpus và SciFact.
 
 \section{Điểm 3 và 4: ánh xạ neuron và bước thô \ssrpp}
 Chỉ mục nén các neuron thực sự xuất hiện trong corpus thành chỉ số liên tiếp (\texttt{latent\_remap}); đường \texttt{e2e-index} quên áp ánh xạ này lên query nên phần giao giữa neuron query và neuron tài liệu chỉ còn khoảng 2\% (\ndcg\ 1,2 trên NFCorpus). Sau khi ánh xạ query bằng \texttt{remap\_sparse\_embeddings}, kết quả là 44,0, trùng với đường chuẩn.
@@ -1857,12 +1857,12 @@ Ký hiệu và giả thiết như mục~\ref{sec:theory}.
 \begin{proof}[Chứng minh Định lý A]
 Chứng minh gồm ba bước.
 
-\emph{Bước 1: bất đẳng thức tam giác.} Tách sai lệch thành phần do tái tạo và phần do cấu trúc decoder:
+\emph{Bước 1: bất đẳng thức tam giác.} Tách sai lệch thành phần do reconstruction và phần do cấu trúc decoder:
 \begin{equation}
 \big|\bx^\top\by-\bz_x^\top\bz_y\big|\le\big|\bx^\top\by-\hat\bx^\top\hat\by\big|+\big|\hat\bx^\top\hat\by-\bz_x^\top\bz_y\big| .
 \end{equation}
 
-\emph{Bước 2: sai số tái tạo.} Đặt $\mathbf{e}_x=\bx-\hat\bx$ và $\mathbf{e}_y=\by-\hat\by$. Khai triển
+\emph{Bước 2: sai số reconstruction.} Đặt $\mathbf{e}_x=\bx-\hat\bx$ và $\mathbf{e}_y=\by-\hat\by$. Khai triển
 $\bx^\top\by-\hat\bx^\top\hat\by=\bx^\top\mathbf{e}_y+\mathbf{e}_x^\top\by-\mathbf{e}_x^\top\mathbf{e}_y$. Theo bất đẳng thức Cauchy-Schwarz cùng Giả thiết 1 và 2, ba số hạng lần lượt bị chặn bởi $B\epsilon$, $\epsilon B$ và $\epsilon^2$, nên tổng không vượt quá $2B\epsilon+\epsilon^2$.
 
 \emph{Bước 3: sai số hình học của decoder.} Vì $\hat\bx=\Wdec\bz_x$ và $\hat\by=\Wdec\bz_y$ nên $\hat\bx^\top\hat\by=\bz_x^\top(\Wdec^\top\Wdec)\bz_y$. Trừ đi $\bz_x^\top\bz_y$ ta được $\bz_x^\top(\Wdec^\top\Wdec-\mathbf{I})\bz_y$; theo Giả thiết 3, biểu thức này bị chặn bởi $\delta\|\bz_x\|_2\|\bz_y\|_2$, và theo Giả thiết 4 là $\delta C^2$. Ghép ba bước lại thu được \eqref{eq:thmA}.
@@ -1872,7 +1872,7 @@ $\bx^\top\by-\hat\bx^\top\hat\by=\bx^\top\mathbf{e}_y+\mathbf{e}_x^\top\by-\math
 Đặt $s_{ij}=\bq_i^\top\bd_j$ và $\tilde s_{ij}=\bz_{q_i}^\top\bz_{d_j}$. Theo Định lý A, $|s_{ij}-\tilde s_{ij}|\le\eta$ với mọi $i,j$. Dùng bất đẳng thức sơ cấp $|\max_j a_j-\max_j b_j|\le\max_j|a_j-b_j|$, với mỗi token truy vấn sai lệch giữa hai cực đại không vượt quá $\eta$. Cộng dồn trên $N$ token truy vấn cho ra \eqref{eq:thmB}.
 \end{proof}
 
-\paragraph{Điều kiện bảo toàn thứ tự.} Gọi $S$ và $\tilde S$ là điểm dense và điểm thưa của hai tài liệu $D_1$, $D_2$ với cùng truy vấn. Nếu $S(D_1)-S(D_2)>2N\eta$ thì theo \eqref{eq:thmB}, $\tilde S(D_1)\ge S(D_1)-N\eta>S(D_2)+N\eta\ge\tilde S(D_2)$, tức thứ tự được giữ. Điều kiện này là đủ, không phải cần.
+\paragraph{Điều kiện bảo toàn thứ tự.} Gọi $S$ và $\tilde S$ là điểm dense và điểm sparse của hai tài liệu $D_1$, $D_2$ với cùng truy vấn. Nếu $S(D_1)-S(D_2)>2N\eta$ thì theo \eqref{eq:thmB}, $\tilde S(D_1)\ge S(D_1)-N\eta>S(D_2)+N\eta\ge\tilde S(D_2)$, tức thứ tự được giữ. Điều kiện này là đủ, không phải cần.
 
 \chapter{Các kết quả khác của bài báo}
 \label{app:paper}
@@ -2039,13 +2039,13 @@ Theo Hình~\ref{fig:paper-hk}, chất lượng theo $h$ có dạng chữ U ngư�
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{paper_fig4_sensitivity.pdf}
-\caption[Hình 4 của bài báo]{Trái: ảnh hưởng của hidden dimension $h$ (từ $2^{12}$ đến $2^{16}$). Phải: ảnh hưởng của mức thưa $K$ (từ 8 đến 128). Nguồn: Hình 4 của bài báo~\cite{ssr}.}
+\caption[Hình 4 của bài báo]{Trái: ảnh hưởng của hidden dimension $h$ (từ $2^{12}$ đến $2^{16}$). Phải: ảnh hưởng của mức sparsity $K$ (từ 8 đến 128). Nguồn: Hình 4 của bài báo~\cite{ssr}.}
 \label{fig:paper-hk}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{\ndcg\ theo mức thưa $K$ và theo nhóm miền dữ liệu (theo bài báo).}
+\caption{\ndcg\ theo mức sparsity $K$ và theo nhóm miền dữ liệu (theo bài báo).}
 \label{tab:k-domain}
 \small
 \begin{tabular}{lrrrrr}

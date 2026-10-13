@@ -9,7 +9,7 @@
 ## Cấu trúc 5 chương
 
 1. Bài toán, bối cảnh và mục tiêu – bài toán truy hồi, BM25/SVR/MVR, pipeline PLAID, hạn chế của K-means, ý tưởng SSR và bài báo, nghiên cứu liên quan, bốn câu hỏi kiểm chứng (K1–K4), phạm vi, phương pháp.
-2. Biểu diễn thưa và huấn luyện SSR – biểu diễn thưa, SAE TopK, MaxSim thưa (công thức (4)), SSR-tok/SSR-CLS, Định lý A/B (phát biểu, ý nghĩa, điều kiện áp dụng; chứng minh ở Phụ lục B), hàm mục tiêu lai, ablation, đối chiếu thiết lập huấn luyện với mã nguồn.
+2. Biểu diễn sparse và huấn luyện SSR – biểu diễn sparse, SAE TopK, sparse MaxSim (công thức (4)), SSR-tok/SSR-CLS, Định lý A/B về sai lệch bị chặn (phát biểu, ý nghĩa, điều kiện áp dụng; chứng minh ở Phụ lục B), hàm mục tiêu hybrid training, ablation, đối chiếu thiết lập huấn luyện với mã nguồn.
 3. Lập chỉ mục và truy hồi – inverted index mức neuron (posting mức token và mức tài liệu), SSR exact, SSR++ với điều kiện bỏ block, độ phức tạp, các điểm cần chú ý khi cài đặt.
 4. Tái lập và kiểm chứng – bảng câu hỏi/phép kiểm tra/kết quả/giới hạn; kết quả công bố cần kiểm chứng; môi trường và giao thức đo; kiểm tra pipeline bằng baseline; 10 điểm sai lệch (9 đã xử lý); split test và split train/dev đối chứng; MS MARCO re-ranking; so sánh với PLAID và giới hạn.
 5. Cải tiến, thảo luận và kết luận – nút thắt đã đo; kernel `fast_hyb`; kết quả trên cùng 100 query (29,6 lần so với repo exact, 12 luồng), GPU; LB-rerank; hướng không hiệu quả; thảo luận; kết luận theo K1–K4 và ba hướng phát triển.

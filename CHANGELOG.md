@@ -152,7 +152,7 @@ Làm theo lộ trình 7 đợt ở mục 8 của kế hoạch. Bản trước kh
 | Chương mới | Nguồn từ bản cũ | Trang |
 |---|---|---|
 | 1. Bài toán, bối cảnh và mục tiêu | Chương 1, rút 1.1.1, 1.1.2, 1.5.2, 1.6; thêm bốn câu hỏi kiểm chứng K1–K4 | 1–5 |
-| 2. Biểu diễn thưa và huấn luyện SSR | Chương 2 + Chương 3; gộp hai mục giới thiệu SAE; chứng minh Định lý A/B xuống Phụ lục B; bỏ Hình phân rã sai số và Hình ablation; bảng/hình độ nhạy xuống Phụ lục C | 6–12 |
+| 2. Biểu diễn sparse và huấn luyện SSR | Chương 2 + Chương 3; gộp hai mục giới thiệu SAE; chứng minh Định lý A/B xuống Phụ lục B; bỏ Hình phân rã sai số và Hình ablation; bảng/hình độ nhạy xuống Phụ lục C | 6–12 |
 | 3. Lập chỉ mục và truy hồi | Chương 4; gộp 4.1 vào 4.2; 4.6 (hiệu quả SSR++ theo bài) và bảng chi phí chỉ mục chuyển sang Chương 4 mới | 13–16 |
 | 4. Tái lập và kiểm chứng | Mục 5.1–5.3 cũ, chọn lọc; thêm Bảng 4.1 (câu hỏi, phép kiểm tra, kết quả, giới hạn), Bảng 4.2 (trích Bảng 1), Bảng 4.5 (phiên bản và độ đo, dạng bảng), mục giao thức đo; cây repo và log xuống phụ lục; bảng trả lời GitHub gộp vào 2.8 và 4.4 | 17–24 |
 | 5. Cải tiến, thảo luận và kết luận | Mục 5.4–5.6 cũ; 5.5.3 rút thành một đoạn "Điều kiện triển khai", 5.5.4 rút thành một câu; kết luận viết lại theo K1–K4; hướng phát triển còn ba ưu tiên | 25–30 |
@@ -182,3 +182,5 @@ Phụ lục: A (chi tiết sai lệch, thêm điểm 10 và trích log), B (ch�
 - Bảng phân công đã gán lại theo bố cục mới; nhóm sửa người phụ trách cho đúng thực tế nếu cần.
 - Số liệu mã hóa corpus SSR trên FiQA là 1.294 s ngoại suy; nếu nhóm có số đo đầy đủ thì thay vào Bảng 4.13, Bảng 4.14 và Phụ lục D.
 - Các việc trong kế hoạch chưa làm vì cần chạy lại thí nghiệm: đo baseline và kernel mới trên toàn bộ cùng tập query FiQA; thống kê độ dài query, nhãn, trùng lặp và khoảng tin cậy để giải thích chênh lệch theo split.
+
+**Thuật ngữ (bổ sung cùng ngày).** Theo quyết định của nhóm giữ thuật ngữ tiếng Anh, các cụm đã dịch được đổi lại: "biểu diễn thưa" thành "biểu diễn sparse" (kể cả tên Chương 2: "Biểu diễn sparse và huấn luyện SSR"), "không gian / vector / điểm / tích vô hướng thưa" thành "... sparse", "MaxSim thưa" thành "sparse MaxSim", "huấn luyện lai" và "hàm mục tiêu lai" thành "hybrid training", "từ thô đến tinh" thành "coarse-to-fine", "mức thưa K" thành "mức sparsity K", "chồng chập" thành "superposition", "sụp đổ biểu diễn" thành "representation collapse", "truy hồi thưa học được" thành "learned sparse retrieval"; "tái tạo" khi là tên khái niệm (sai số reconstruction, thành phần reconstruction, Reconstruction trung thực) đổi sang "reconstruction", khi là động từ ("SAE tái tạo tốt") giữ tiếng Việt. "Bước thô / bước tinh" giữ tiếng Việt vì là từ mô tả, có chú thích "coarse scoring / fine re-scoring" ở lần đầu (mục 3.3). Phần giải thích trong bảng từ viết tắt vẫn tiếng Việt.

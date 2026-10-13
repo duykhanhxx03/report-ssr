@@ -23,7 +23,7 @@ Hiện tại phần phương pháp khá đầy đủ, nhưng Chương 5 chứa c
 | Chương | Nội dung chính | Nguồn trong báo cáo hiện tại | Dung lượng tham khảo |
 |---|---|---|---|
 | 1. Bài toán, bối cảnh và mục tiêu | Bài toán truy hồi; BM25/SVR/MVR; hạn chế pipeline hiện có; ý tưởng SSR; câu hỏi kiểm chứng và phạm vi | Chương 1 | 4–5 trang |
-| 2. Biểu diễn thưa và huấn luyện SSR | MaxSim thưa; SSR-tok/CLS; SAE TopK; các nhóm loss; cận sai lệch và điều kiện áp dụng | Chương 2 + 3 | 7–9 trang |
+| 2. Biểu diễn sparse và huấn luyện SSR | MaxSim thưa; SSR-tok/CLS; SAE TopK; các nhóm loss; cận sai lệch và điều kiện áp dụng | Chương 2 + 3 | 7–9 trang |
 | 3. Lập chỉ mục và truy hồi | Inverted index mức neuron; exact SSR; SSR++; pruning; độ phức tạp; các sai lệch cài đặt liên quan | Chương 4 | 5–6 trang |
 | 4. Tái lập và kiểm chứng | Kết quả công bố liên quan; môi trường/giao thức; baseline; lỗi; kết quả test và train/dev; MS MARCO; so sánh PLAID; giới hạn | Mục 5.1–5.3, chọn lọc | 8–10 trang |
 | 5. Cải tiến, thảo luận và kết luận | fast_hyb; GPU; LB-rerank; đánh đổi tốc độ/bộ nhớ/chất lượng; các hướng thất bại tiêu biểu; trả lời câu hỏi kiểm chứng | Mục 5.4–5.6 | 5–7 trang |

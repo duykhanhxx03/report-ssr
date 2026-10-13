@@ -18,7 +18,7 @@ Báo cáo môn **Tìm kiếm và truy xuất thông tin** (Nhóm 9, lớp M25CQH
 Cấu trúc báo cáo:
 
 1. **Bài toán, bối cảnh và mục tiêu** – bài toán truy hồi, ba họ phương pháp, pipeline PLAID, hạn chế của K-means, ý tưởng SSR và bài báo, bốn câu hỏi kiểm chứng, phạm vi.
-2. **Biểu diễn thưa và huấn luyện SSR** – SAE TopK, MaxSim thưa, SSR-tok/SSR-CLS, Định lý A/B về sai lệch bị chặn, hàm mục tiêu lai, ablation, đối chiếu thiết lập huấn luyện với mã nguồn công bố.
+2. **Biểu diễn sparse và huấn luyện SSR** – SAE TopK, MaxSim thưa, SSR-tok/SSR-CLS, Định lý A/B về sai lệch bị chặn, hàm mục tiêu lai, ablation, đối chiếu thiết lập huấn luyện với mã nguồn công bố.
 3. **Lập chỉ mục và truy hồi** – inverted index mức neuron, SSR exact, SSR++, độ phức tạp, các điểm cần chú ý khi cài đặt.
 4. **Tái lập và kiểm chứng** – kết quả công bố cần kiểm chứng; môi trường và giao thức đo; kiểm tra pipeline bằng baseline; sai lệch mã nguồn; split test và split đối chứng; MS MARCO; so sánh với PLAID và giới hạn.
 5. **Cải tiến, thảo luận và kết luận** – kernel `fast_hyb`, GPU, LB-rerank, hướng không hiệu quả, thảo luận, kết luận theo từng câu hỏi kiểm chứng.
