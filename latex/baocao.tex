@@ -43,7 +43,7 @@
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{multirow}
 \usepackage{longtable}
-\usepackage{rotating}
+\usepackage{pdflscape}
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{listings}
@@ -1942,12 +1942,13 @@ LIMIT~\cite{weller2025} & -- & Kiểm tra giới hạn biểu diễn & Stress te
 Bảng~\ref{tab:datasets-paper} liệt kê các bộ dữ liệu. BEIR~\cite{thakur2021} gồm 18 tập dữ liệu truy hồi zero-shot; bài dùng 13 tập. MS~MARCO passage~\cite{nguyen2016} có tập dev-small 6.980 truy vấn (nhãn nhị phân) và TREC DL 2019 với 43 truy vấn có nhãn 4 mức. Ngoài \mrr\ và \ndcg, bài còn dùng Recall@$k$ và Success@5 (cho LoTTE: tỉ lệ truy vấn có ít nhất một tài liệu đúng trong top-5). Độ trễ đo trên GPU A100 40~GB sau 1.000 truy vấn khởi động; các số liệu CPU đo trên Xeon Platinum 8275CL 96 lõi.
 
 \section{Bảng 1 đầy đủ}
-\begin{sidewaystable}
+\begin{landscape}
+\begin{table}[p]
 \centering
 \caption[Bảng 1 của bài báo (đầy đủ)]{Bảng 1 của bài báo (bản arXiv v3): \ndcg\ trên 13 tập BEIR, cột MS là MS~MARCO (xem mục~\ref{sec:versions} về độ đo của cột này), độ trễ ms/truy vấn trên MS~MARCO. In đậm: tốt nhất; gạch chân: thứ hai.}
 \label{tab:main-paper}
-\footnotesize
-\setlength{\tabcolsep}{4pt}
+\normalsize
+\setlength{\tabcolsep}{7pt}
 \begin{tabular}{lrrrrrrrrrrrrrrrr}
 \toprule
 Phương pháp & Độ trễ & MS & AR & CF & CV & DB & FE & FQ & HQ & NF & NQ & QU & SD & SF & TO & TB.\\
@@ -1970,7 +1971,8 @@ SPLADE-v3 & 16,6 & 43,9 & \underline{50,8} & \underline{23,3} & 74,8 & 45,2 & 79
 \ssr-CLS & 19,5 & \textbf{45,5} & 46,6 & \textbf{23,5} & \textbf{76,8} & \textbf{48,4} & \underline{82,8} & \textbf{40,0} & \underline{69,9} & \textbf{39,1} & \textbf{61,2} & \textbf{88,7} & \textbf{17,9} & \textbf{73,3} & 33,7 & \textbf{53,4}\\
 \bottomrule
 \end{tabular}
-\end{sidewaystable}
+\end{table}
+\end{landscape}
 
 \section{Backbone LLM, LoTTE, văn bản dài và LIMIT}
 Với backbone Llama-embed-nemotron-8b đóng băng (Bảng~\ref{tab:llm-paper}), lớp chiếu tuyến tính chỉ cải thiện khoảng 0,3 điểm trong khi sparse coding cải thiện khoảng 1,3 điểm; bài kết luận lợi ích đến từ bản chất sparse coding chứ không phải từ việc thêm tham số. Trên LoTTE (Bảng~\ref{tab:lotte}), \ssr\ vượt ColBERTv2 2,5 và 2,2 điểm với truy vấn Search và Forum. Với văn bản dài trên MS~MARCO Document, \ssr-CLS đạt \mrr\ 48,8 với độ trễ 29,3 ms và \ssr-tok đạt 48,3 với 27,5 ms, trong khi ColBERTv2 đạt 41,5 với 79,3 ms. Trên LIMIT (Bảng~\ref{tab:limit}), các mô hình SVR mạnh nhất chỉ đạt Recall@5 dưới 5\%, trong khi \ssr\ đạt 78,6.
