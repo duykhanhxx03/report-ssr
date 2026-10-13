@@ -346,13 +346,13 @@ Khác biệt giữa các họ phương pháp nằm ở cách biểu diễn $Q$ v
 
 \section{Ba hướng tiếp cận truy hồi}
 \subsection{Lexical retrieval với BM25 và inverted index}
-Lexical retrieval so khớp từ một cách chính xác. Mỗi từ $t$ trong kho được gắn với một \emph{posting list} $I_t=\{(D,w_{D,t})\}$ liệt kê các tài liệu chứa nó cùng trọng số; cấu trúc dữ liệu này gọi là \emph{inverted index}. BM25~\cite{bm25} chấm điểm tài liệu bằng tổng có trọng số của tần suất từ, có chuẩn hóa theo độ dài tài liệu và độ hiếm của từ. Ưu điểm lớn nhất là tốc độ: truy vấn chỉ cần duyệt $|Q|$ posting list và cộng dồn điểm, chi phí tỉ lệ với tổng độ dài các posting chứ không với kích thước kho. Inverted index còn hỗ trợ safe pruning (WAND, Block-Max WAND): mỗi block posting lưu cận trên của trọng số để bỏ qua những block không thể đưa tài liệu vào top-$k$. Nhược điểm là không hiểu đồng nghĩa: hai câu diễn đạt cùng một ý bằng từ khác nhau sẽ không khớp. Inverted index cũng là hạ tầng mà \ssr\ tái sử dụng ở Chương~\ref{ch:index}.
+Lexical retrieval so khớp từ một cách chính xác. Mỗi từ $t$ trong kho được gắn với một \emph{posting list} $I_t=\{(D,w_{D,t})\}$ liệt kê các tài liệu chứa nó cùng trọng số; cấu trúc dữ liệu này gọi là \emph{inverted index}. BM25~\cite{robertson1995} chấm điểm tài liệu bằng tổng có trọng số của tần suất từ, có chuẩn hóa theo độ dài tài liệu và độ hiếm của từ. Ưu điểm lớn nhất là tốc độ: truy vấn chỉ cần duyệt $|Q|$ posting list và cộng dồn điểm, chi phí tỉ lệ với tổng độ dài các posting chứ không với kích thước kho. Inverted index còn hỗ trợ safe pruning (WAND, Block-Max WAND): mỗi block posting lưu cận trên của trọng số để bỏ qua những block không thể đưa tài liệu vào top-$k$. Nhược điểm là không hiểu đồng nghĩa: hai câu diễn đạt cùng một ý bằng từ khác nhau sẽ không khớp. Inverted index cũng là hạ tầng mà \ssr\ tái sử dụng ở Chương~\ref{ch:index}.
 
 \subsection{Single-Vector Retrieval (SVR)}
-SVR nén toàn bộ tài liệu thành một vector, thường lấy từ token \texttt{[CLS]} hoặc bằng pooling, rồi tính điểm bằng tích vô hướng với vector truy vấn; tìm kiếm dùng các thuật toán approximate nearest neighbor (ANN) như HNSW hay IVF. Hạn chế căn bản là mọi chi tiết mức token bị nén vào một vector kích thước cố định. Benchmark LIMIT~\cite{limit} cho thấy rõ điều này: các mô hình SVR mạnh chỉ đạt Recall@5 dưới 5\%, trong khi các mô hình MVR đạt trên 70\% (Bảng~\ref{tab:limit}, Phụ lục~\ref{app:paper}).
+SVR nén toàn bộ tài liệu thành một vector, thường lấy từ token \texttt{[CLS]} hoặc bằng pooling, rồi tính điểm bằng tích vô hướng với vector truy vấn; tìm kiếm dùng các thuật toán approximate nearest neighbor (ANN) như HNSW hay IVF (ví dụ trong thư viện FAISS~\cite{douze2024}). Hạn chế căn bản là mọi chi tiết mức token bị nén vào một vector kích thước cố định. Benchmark LIMIT~\cite{weller2025} cho thấy rõ điều này: các mô hình SVR mạnh chỉ đạt Recall@5 dưới 5\%, trong khi các mô hình MVR đạt trên 70\% (Bảng~\ref{tab:limit}, Phụ lục~\ref{app:paper}).
 
 \subsection{Multi-Vector Retrieval (MVR) và late interaction}
-MVR giữ nguyên một embedding cho mỗi token của cả truy vấn lẫn tài liệu. ColBERT~\cite{colbert} mã hóa query thành $\{q_1,\dots,q_N\}$ và tài liệu thành $\{d_1,\dots,d_M\}$ (mỗi token một vector 128 chiều đã chuẩn hóa) rồi tính điểm bằng toán tử MaxSim: với mỗi token truy vấn $q_i$, tìm token tài liệu $d_j$ tương đồng nhất, rồi cộng các cực đại này trên toàn bộ token truy vấn:
+MVR giữ nguyên một embedding cho mỗi token của cả truy vấn lẫn tài liệu. ColBERT~\cite{khattab2020} mã hóa query thành $\{q_1,\dots,q_N\}$ và tài liệu thành $\{d_1,\dots,d_M\}$ (mỗi token một vector 128 chiều đã chuẩn hóa) rồi tính điểm bằng toán tử MaxSim: với mỗi token truy vấn $q_i$, tìm token tài liệu $d_j$ tương đồng nhất, rồi cộng các cực đại này trên toàn bộ token truy vấn:
 \begin{equation}
 S(Q,D)=\sum_{i=1}^{N}\max_{j=1}^{M}\, q_i\cdot d_j .
 \label{eq:maxsim}
@@ -406,7 +406,7 @@ Kích thước chỉ mục & Nhỏ & Nhỏ & Rất lớn\\
 
 \section{Pipeline ba tầng của ColBERTv2/PLAID}
 \label{sec:plaid}
-Để giảm chi phí của MVR, ColBERTv2~\cite{colbertv2} giảm số chiều embedding token (từ 768 xuống 128) rồi clustering bằng K-means với $\sqrt{16\cdot\text{số token}}$ cụm; mỗi token được lưu dưới dạng chỉ số centroid gần nhất kèm residual quantization 1--2 bit. PLAID~\cite{plaid} tổ chức tìm kiếm thành ba tầng (Hình~\ref{fig:paradigms}):
+Để giảm chi phí của MVR, ColBERTv2~\cite{santhanam2022b} giảm số chiều embedding token (từ 768 xuống 128) rồi clustering bằng K-means với số cụm tỉ lệ với căn bậc hai của số vector token (khoảng $16\sqrt{n_{\text{token}}}$, làm tròn xuống lũy thừa của 2 trong mã nguồn ColBERTv2); mỗi token được lưu dưới dạng chỉ số centroid gần nhất kèm residual quantization 1--2 bit. PLAID~\cite{santhanam2022a} tổ chức tìm kiếm thành ba tầng (Hình~\ref{fig:paradigms}):
 \begin{enumerate}[leftmargin=1.5cm]
   \item \textbf{Tầng I: sinh ứng viên.} Từ mỗi token truy vấn, lấy các centroid gần nhất $\mathcal{C}_i$ rồi gom tất cả tài liệu có token thuộc các cụm đó:
   \begin{equation}
@@ -493,14 +493,14 @@ Từ các hạn chế trên, bài báo đặt câu hỏi: \emph{liệu có thể
 
 Bài báo đóng góp ba điểm: (i) chiếu embedding token lên không gian sparse nhiều chiều để thay thế clustering, cho phép truy hồi ngữ nghĩa đa vector qua một giai đoạn trên inverted index; (ii) hàm mục tiêu hybrid training kết hợp reconstruction và contrastive nhằm vừa giữ thông tin vừa bảo đảm khả năng phân biệt; (iii) inverted index mức neuron cùng thuật toán truy hồi hai bước \ssrpp, kèm phân tích lý thuyết về sai lệch bị chặn so với điểm dense và đánh giá trên MS~MARCO, BEIR và backbone LLM 8B. Bài còn đề xuất hai biến thể: \ssr-tok chỉ dùng điểm token sparse và \ssr-CLS bổ sung tín hiệu ngữ nghĩa toàn cục từ token \texttt{[CLS]}. Theo số liệu công bố, \ssr\ đạt \ndcg\ trung bình 52,9--53,4 trên 13 tập BEIR với độ trễ 17,5--19,5 ms, vừa cao hơn vừa nhanh hơn ColBERTv2, PLAID và SPLADE-v3; các số liệu này được tổng hợp và kiểm chứng ở Chương~\ref{ch:repro}.
 
-Bài báo \emph{No More K-means: Single-Stage Sparse Coding for Efficient Multi-Vector Retrieval} của Lixuan Guo, Yifei Wang, Tiansheng Wen, Aosong Feng, Stefanie Jegelka và Chenyu You được công bố tại ICML 2026 (PMLR~306)~\cite{ssr,ssrpmlr}. Báo cáo dùng bản arXiv:2605.30120 v3 (03/06/2026) làm bản chính và đối chiếu với bản v4 (28/09/2026) cùng bản PMLR. Mã nguồn được công bố tại \url{https://github.com/Y-Research-SBU/SSR} (giấy phép MIT, commit \texttt{c64bc05})~\cite{ssrcode}, checkpoint \ssr-tok tại \url{https://huggingface.co/Y-Research-Group/SSR}~\cite{ssrckpt}.
+Bài báo \emph{No More K-means: Single-Stage Sparse Coding for Efficient Multi-Vector Retrieval} của Lixuan Guo, Yifei Wang, Tiansheng Wen, Aosong Feng, Stefanie Jegelka và Chenyu You được công bố tại ICML 2026 (PMLR~306)~\cite{ssr}. Báo cáo dùng bản arXiv:2605.30120 v3 (03/06/2026) làm bản chính và đối chiếu với bản v4 (28/09/2026) cùng bản PMLR. Mã nguồn được công bố tại \url{https://github.com/Y-Research-SBU/SSR} (giấy phép MIT, commit \texttt{c64bc05})~\cite{ssrcode}, checkpoint \ssr-tok tại \url{https://huggingface.co/Y-Research-Group/SSR}~\cite{ssrckpt}.
 
 \section{Các nghiên cứu liên quan}
-\textbf{Tối ưu hóa MVR.} ColBERTv2 giảm chiều và nén residual~\cite{colbertv2}; PLAID~\cite{plaid} và EMVB~\cite{emvb} cải thiện khâu pruning nhiều tầng bằng centroid và bit-vector/SIMD; XTR~\cite{xtr} và WARP~\cite{warp} đặt mục tiêu truy hồi token rẻ hơn. Tất cả vẫn cần một codebook học bằng K-means và phải dựng lại codebook khi kho thay đổi.
+\textbf{Tối ưu hóa MVR.} ColBERTv2 giảm chiều và nén residual~\cite{santhanam2022b}; PLAID~\cite{santhanam2022a} và EMVB~\cite{nardini2024} cải thiện khâu pruning nhiều tầng bằng centroid và bit-vector/SIMD; XTR~\cite{lee2023} và WARP~\cite{scheerer2025} đặt mục tiêu truy hồi token rẻ hơn; AligneR~\cite{qian2022} và CITADEL~\cite{li2023a} học cách chọn hoặc định tuyến token để giảm số cặp phải so khớp. Các hệ dựa trên centroid vẫn cần một codebook học bằng K-means và phải dựng lại codebook khi kho thay đổi. Một hướng khác thay late interaction bằng cấu trúc khác: mã hóa chiều cố định trong MUVERA~\cite{dhulipala2024}, băm trong DESSERT~\cite{engels2023}, đồ thị lân cận trong IGP~\cite{bian2025}.
 
-\textbf{Learned sparse retrieval và inverted index.} SPLADE~\cite{splade} học trọng số sparse trên từ điển 30.522 từ của BERT và truy hồi bằng inverted index, nhưng gộp cả văn bản thành \emph{một} vector sparse trên một từ điển cố định. COIL~\cite{coil} giữ tương tác mức token nhưng chỉ cho các token khớp từ chính xác. \ssr\ khác hai hướng này ở chỗ không gian sparse được \emph{học} từ SAE, không ràng buộc vào từ điển, và tương tác mức token được giữ cho mọi cặp token chung neuron.
+\textbf{Learned sparse retrieval và inverted index.} SPLADE~\cite{formal2021b,formal2021a,lassance2024} học trọng số sparse trên từ điển 30.522 từ của BERT và truy hồi bằng inverted index, nhưng gộp cả văn bản thành \emph{một} vector sparse trên một từ điển cố định. COIL~\cite{gao2021} giữ tương tác mức token nhưng chỉ cho các token khớp từ chính xác. \ssr\ khác hai hướng này ở chỗ không gian sparse được \emph{học} từ SAE, không ràng buộc vào từ điển, và tương tác mức token được giữ cho mọi cặp token chung neuron.
 
-\textbf{Sparse Autoencoder.} SAE với các biến thể TopK~\cite{topksae}, BatchTopK, JumpReLU và Gated được dùng nhiều trong nghiên cứu diễn giải mô hình ngôn ngữ, nhằm tách dense embedding thành các ``khái niệm'' riêng. \ssr\ là một trong những ứng dụng đầu tiên của TopK SAE vào truy hồi: mỗi chiều của sparse code là một neuron khái niệm, không phải một từ, và được dùng làm khóa của inverted index.
+\textbf{Sparse Autoencoder.} SAE với các biến thể TopK~\cite{gao2024}, BatchTopK~\cite{bussmann2024}, JumpReLU~\cite{rajamanoharan2024b} và Gated~\cite{rajamanoharan2024a} được dùng nhiều trong nghiên cứu diễn giải mô hình ngôn ngữ~\cite{cunningham2023,templeton2024}, nhằm tách dense embedding thành các ``khái niệm'' riêng. Hai công trình trước của nhóm tác giả, CSR~\cite{wen2025} và CSRv2~\cite{guo2026}, dùng sparse coding cho embedding một vector. \ssr\ đưa ý tưởng này xuống mức token: mỗi chiều của sparse code là một neuron khái niệm, không phải một từ, và được dùng làm khóa của inverted index.
 
 \section{Mục tiêu, câu hỏi kiểm chứng, phạm vi và phương pháp}
 \label{sec:goal}
@@ -529,7 +529,7 @@ Báo cáo có hai mục tiêu. Về lý thuyết, trình bày cơ sở của \ss
 Ở thời điểm thực hiện báo cáo (10/2026), mã nguồn của bài có hai issue công khai từ hai nhóm độc lập báo không tái lập được Bảng 1~\cite{ssrcode}; tác giả đã thừa nhận một số lỗi và bản arXiv v4 đã sửa lại cách so sánh trên MS~MARCO. Vì vậy, bên cạnh việc tìm hiểu ý tưởng, kiểm tra khả năng tái lập là nội dung trọng tâm của Chương~\ref{ch:repro}.
 
 \subsection{Cấu trúc báo cáo}
-Chương~\ref{ch:sparse} trình bày biểu diễn sparse, sparse MaxSim, cận sai lệch so với điểm dense và cách huấn luyện SAE; Chương~\ref{ch:index} trình bày inverted index mức neuron và hai thuật toán \ssr, \ssrpp; Chương~\ref{ch:repro} tổng hợp các kết quả công bố cần kiểm chứng, rồi trình bày môi trường, các sai lệch mã nguồn, kết quả tái lập và so sánh với ColBERTv2/PLAID; Chương~\ref{ch:opt} trình bày phần cải tiến mã nguồn, thảo luận và kết luận theo từng câu hỏi kiểm chứng. Phụ lục~\ref{app:fixes} ghi chi tiết từng lỗi đã sửa kèm đoạn mã trước và sau; Phụ lục~\ref{app:proofs} chứng minh hai định lý về cận sai lệch; Phụ lục~\ref{app:paper} tổng hợp các kết quả khác của bài báo; Phụ lục~\ref{app:sources} ghi nguồn của từng số liệu hiệu năng; Phụ lục~\ref{app:run} hướng dẫn chạy lại. Mã nguồn, patch, script đánh giá và kết quả của nhóm được công bố tại \url{\RepoNhom}.
+Chương~\ref{ch:sparse} trình bày biểu diễn sparse, sparse MaxSim, cận sai lệch so với điểm dense và cách huấn luyện SAE; Chương~\ref{ch:index} trình bày inverted index mức neuron và hai thuật toán \ssr, \ssrpp; Chương~\ref{ch:repro} tổng hợp các kết quả công bố cần kiểm chứng, rồi trình bày môi trường, các sai lệch mã nguồn, kết quả tái lập và so sánh với ColBERTv2/PLAID; Chương~\ref{ch:opt} trình bày phần cải tiến mã nguồn, thảo luận và kết luận theo từng câu hỏi kiểm chứng. Phụ lục~\ref{app:fixes} ghi chi tiết từng lỗi đã sửa kèm đoạn mã trước và sau; Phụ lục~\ref{app:proofs} chứng minh hai định lý về cận sai lệch; Phụ lục~\ref{app:paper} tổng hợp các kết quả khác của bài báo; Phụ lục~\ref{app:sources} ghi nguồn của từng số liệu hiệu năng; Phụ lục~\ref{app:run} hướng dẫn chạy lại. Mã nguồn, patch, script đánh giá và kết quả của nhóm được công bố tại \url{\RepoNhom}~\cite{nhom}.
 % =====================================================================
 %  CHƯƠNG 2
 % =====================================================================
@@ -541,7 +541,7 @@ Chương này trình bày phần mô hình của \ssr: vì sao chuyển từ bi�
 \section{Từ biểu diễn dense sang biểu diễn sparse}
 ColBERT chiếu mỗi token về một vector 128 chiều trong đó hầu như mọi chiều đều khác không. Chính đặc điểm dense này khiến inverted index không dùng được: một vector dense ``nằm'' trên mọi chiều, không có chiều nào đủ đặc trưng để làm khóa tra cứu, nên muốn tìm ứng viên hệ thống phải clustering rồi duyệt theo centroid, tức quay lại nút thắt ở mục~\ref{sec:limits}.
 
-Sparse coding~\cite{sparsecoding} biểu diễn một tín hiệu bằng tổ hợp của một số ít phần tử lấy từ một từ điển lớn hơn nhiều so với số chiều tín hiệu (từ điển overcomplete, $h\gg d$). Trong Sparse Autoencoder, mỗi neuron được kỳ vọng đảm nhiệm một ``khái niệm'' ngữ nghĩa hẹp, và dense embedding của token được xem là superposition của nhiều khái niệm như vậy; nhiệm vụ của SAE là tách các khái niệm đó ra thành các chiều riêng. Với truy hồi, điều quan trọng là hai token gần nghĩa sẽ kích hoạt chung một số neuron, nên một neuron hoạt động đóng vai trò như một pseudo-token, tương tự một từ khóa trong BM25. Vì số neuron bật cho mỗi token rất nhỏ ($K=32$ trên $h=16.384$, khoảng 0,2\%), mỗi neuron chỉ xuất hiện ở một phần nhỏ token, đủ để xây inverted index. Bảng~\ref{tab:dense-sparse} đối chiếu hai cách biểu diễn, Hình~\ref{fig:tokenflow} mô tả luồng biến đổi một token.
+Sparse coding~\cite{lee2006} biểu diễn một tín hiệu bằng tổ hợp của một số ít phần tử lấy từ một từ điển lớn hơn nhiều so với số chiều tín hiệu (từ điển overcomplete, $h\gg d$). Trong Sparse Autoencoder, mỗi neuron được kỳ vọng đảm nhiệm một ``khái niệm'' ngữ nghĩa hẹp, và dense embedding của token được xem là superposition của nhiều khái niệm như vậy; nhiệm vụ của SAE là tách các khái niệm đó ra thành các chiều riêng. Với truy hồi, điều quan trọng là hai token gần nghĩa sẽ kích hoạt chung một số neuron, nên một neuron hoạt động đóng vai trò như một pseudo-token, tương tự một từ khóa trong BM25. Vì số neuron bật cho mỗi token rất nhỏ ($K=32$ trên $h=16.384$, khoảng 0,2\%), mỗi neuron chỉ xuất hiện ở một phần nhỏ token, đủ để xây inverted index. Bảng~\ref{tab:dense-sparse} đối chiếu hai cách biểu diễn, Hình~\ref{fig:tokenflow} mô tả luồng biến đổi một token.
 
 \begin{table}[htbp]
 \centering
@@ -583,7 +583,7 @@ Chi phí tích vô hướng một cặp token & 128 phép nhân & $\le 32$ (ch�
 
 \section{TopK Sparse Autoencoder}
 \label{sec:sae}
-SAE~\cite{topksae} gồm encoder, toán tử TopK và decoder:
+SAE~\cite{gao2024} gồm encoder, toán tử TopK và decoder:
 \begin{align}
 \bz &= \TopK\big(\Wenc(\bx-\bpre)+\benc\big), \label{eq:sae-enc}\\
 \hat\bx &= \Wdec\,\bz+\bpre, \label{eq:sae-dec}\\
@@ -1034,7 +1034,7 @@ Chương này là phần thực hành của nhóm. Mục~\ref{sec:paper-claims} 
 
 \section{Những kết quả công bố cần kiểm chứng}
 \label{sec:paper-claims}
-Bài báo đánh giá trên 13 tập BEIR~\cite{beir} (zero-shot) và MS~MARCO passage~\cite{msmarco} (in-domain), so với các hệ dense MVR (ColBERT, ColBERTv2, PLAID, COIL, AligneR, CITADEL, XTR) và các hệ learned sparse retrieval (SPLADE-v2, SPLADE-v3), tất cả huấn luyện trên MS~MARCO với hard negative từ BM25. Cấu hình \ssr\ dùng backbone BERT-base-uncased, $K=32$, $h=16.384$, độ dài truy vấn tối đa 32; \ssrpp\ dùng block 64, $K_{\mathrm{coarse}}=4$ và 2.000 ứng viên. Độ trễ được đo bằng ms/truy vấn trên GPU A100 40~GB sau 1.000 truy vấn khởi động; trừ khi ghi rõ, độ trễ của \ssr-tok và \ssr-CLS trong các bảng là của \ssrpp. Danh sách tập dữ liệu và các kết quả về LLM backbone, LoTTE, LIMIT, độ nhạy $h$/$K$ nằm ở Phụ lục~\ref{app:paper}.
+Bài báo đánh giá trên 13 tập BEIR~\cite{thakur2021} (zero-shot) và MS~MARCO passage~\cite{nguyen2016} (in-domain), so với các hệ dense MVR (ColBERT, ColBERTv2, PLAID, COIL, AligneR, CITADEL, XTR) và các hệ learned sparse retrieval (SPLADE-v2, SPLADE-v3), tất cả huấn luyện trên MS~MARCO với hard negative từ BM25. Cấu hình \ssr\ dùng backbone BERT-base-uncased~\cite{devlin2019}, $K=32$, $h=16.384$, độ dài truy vấn tối đa 32; \ssrpp\ dùng block 64, $K_{\mathrm{coarse}}=4$ và 2.000 ứng viên. Độ trễ được đo bằng ms/truy vấn trên GPU A100 40~GB sau 1.000 truy vấn khởi động; trừ khi ghi rõ, độ trễ của \ssr-tok và \ssr-CLS trong các bảng là của \ssrpp. Danh sách tập dữ liệu và các kết quả về LLM backbone, LoTTE, LIMIT, độ nhạy $h$/$K$ nằm ở Phụ lục~\ref{app:paper}.
 
 \subsection{Chất lượng trên BEIR và MS~MARCO}
 Bảng~\ref{tab:main-summary} trích từ Bảng 1 của bài (bản arXiv v3) các phương pháp và tập dữ liệu liên quan đến thực nghiệm của nhóm; bảng đầy đủ 13 tập là Bảng~\ref{tab:main-paper} ở Phụ lục~\ref{app:paper}. Hình~\ref{fig:overview} vẽ lại toàn bộ Bảng 1 dưới dạng chất lượng so với độ trễ. Theo số liệu công bố, \ssr-CLS đạt trung bình cao nhất với 53,4, hơn SPLADE-v3 khoảng 2,2 điểm và hơn PLAID khoảng 4,1 điểm; \ssr-tok với 17,5 ms nhanh gần gấp đôi ColBERTv2 và PLAID; \ssr\ đứng đầu trên 9 trong 13 tập. \ssr\ thấp hơn SPLADE-v3 trên ArguAna và thấp hơn SPLADE-v2 trên Touché, hai tập có truy vấn tranh luận dài, nơi khớp từ vựng chính xác quan trọng hơn.
@@ -1164,7 +1164,7 @@ Bảng 15 (CPU), mọi bản & \mrr & 39,5 & PLAID 39,6; EMVB 39,8 & \ssr-tok ng
 
 \section{Môi trường, checkpoint, dữ liệu và giao thức đo}
 \label{sec:setup}
-Bảng~\ref{tab:env} và~\ref{tab:data} mô tả môi trường và các tập dữ liệu. Các tập BEIR tải theo định dạng MTEB bằng script \texttt{prepare\_mteb\_eval.py} của repo, có bổ sung các split train/dev từ bộ BEIR gốc để phục vụ kiểm tra ở mục~\ref{sec:split}. Mã nguồn, patch, script đánh giá, kết quả và log nằm tại \url{\RepoNhom}; cấu trúc repository gốc và lệnh chạy ghi ở Phụ lục~\ref{app:run}.
+Bảng~\ref{tab:env} và~\ref{tab:data} mô tả môi trường và các tập dữ liệu. Các tập BEIR tải theo định dạng MTEB~\cite{muennighoff2022} bằng script \texttt{prepare\_mteb\_eval.py} của repo, có bổ sung các split train/dev từ bộ BEIR gốc để phục vụ kiểm tra ở mục~\ref{sec:split}. Mã nguồn, patch, script đánh giá, kết quả và log nằm tại \url{\RepoNhom}; cấu trúc repository gốc và lệnh chạy ghi ở Phụ lục~\ref{app:run}.
 
 \begin{table}[htbp]
 \centering
@@ -1177,7 +1177,7 @@ Bảng~\ref{tab:env} và~\ref{tab:data} mô tả môi trường và các tập d
 \midrule
 Phần cứng & CPU Intel i5-12400F (6 nhân / 12 luồng), RAM 32 GB, GPU NVIDIA RTX 5060 8 GB\\
 Hệ điều hành & Windows 11\\
-Phần mềm & Python 3.13, PyTorch 2.11 (CUDA 12.8), transformers 5.3, sentence-transformers 5.3, PyLate 1.6 (ColBERT + fast-plaid), numba 0.61, numpy, scipy\\
+Phần mềm & Python 3.13, PyTorch 2.11 (CUDA 12.8), transformers 5.3, sentence-transformers 5.3, PyLate 1.6~\cite{chaffin2024} (ColBERT + fast-plaid), numba 0.61, numpy, scipy\\
 Mã nguồn & \texttt{Y-Research-SBU/SSR} commit \texttt{c64bc05} (26/06/2026; không có commit nào mới hơn tới ngày 12/10/2026)\\
 Checkpoint & \texttt{SSR-tok} tải từ HuggingFace ngày 11/10/2026 (tác giả đưa lên ngày 05/10/2026)\\
 Baseline & \texttt{colbert-ir/colbertv2.0} chạy qua PyLate; BM25 cài bằng numpy theo công thức Lucene ($k_1=0{,}9$, $b=0{,}4$)\\
@@ -1194,11 +1194,11 @@ Baseline & \texttt{colbert-ir/colbertv2.0} chạy qua PyLate; BM25 cài bằng n
 \toprule
 \textbf{Tập dữ liệu} & \textbf{Lĩnh vực} & \textbf{Số tài liệu} & \textbf{Query (test)} & \textbf{Split khác đã dùng}\\
 \midrule
-NFCorpus & y sinh & 3.633 & 323 & dev 324, train 2.590\\
-SciFact & khoa học & 5.183 & 300 & train 809\\
-FiQA-2018 & tài chính & 57.638 & 648 & dev 500, train 1.000 (mẫu)\\
+NFCorpus~\cite{boteva2016} & y sinh & 3.633 & 323 & dev 324, train 2.590\\
+SciFact~\cite{wadden2020} & khoa học & 5.183 & 300 & train 809\\
+FiQA-2018~\cite{maia2018} & tài chính & 57.638 & 648 & dev 500, train 1.000 (mẫu)\\
 Quora & câu hỏi trùng & 522.931 & 10.000 & dev 5.000\\
-MS MARCO passage & web, in-domain & 8.841.823 & dev-small 6.980; DL19 43 & không\\
+MS MARCO passage~\cite{nguyen2016} & web, in-domain & 8.841.823 & dev-small 6.980; DL19 43 & không\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1209,7 +1209,7 @@ MS MARCO passage & web, in-domain & 8.841.823 & dev-small 6.980; DL19 43 & khôn
 \mathrm{MRR@10}&=\frac{1}{|\mathcal{Q}|}\sum_{q\in\mathcal{Q}}\frac{1}{\mathrm{rank}_q}\quad(\text{bằng 0 nếu }\mathrm{rank}_q>10), \label{eq:mrr}\\
 \mathrm{DCG@10}&=\sum_{i=1}^{10}\frac{2^{\mathrm{rel}_i}-1}{\log_2(i+1)},\qquad \mathrm{nDCG@10}=\frac{\mathrm{DCG@10}}{\mathrm{IDCG@10}}, \label{eq:ndcg}
 \end{align}
-trong đó $\mathrm{rel}_i$ là mức liên quan của kết quả thứ $i$ và IDCG là DCG của xếp hạng lý tưởng~\cite{ndcg}. BEIR dùng mức liên quan có trọng số (NFCorpus có 3 mức, TREC DL có 4 mức), nên nDCG phải tính với $2^{\mathrm{rel}}-1$ chứ không phải nhãn nhị phân. Mọi điểm \ndcg\ và \mrr\ trong báo cáo được ghi trên thang 0--100.
+trong đó $\mathrm{rel}_i$ là mức liên quan của kết quả thứ $i$ và IDCG là DCG của xếp hạng lý tưởng~\cite{jarvelin2002}. BEIR dùng mức liên quan có trọng số (NFCorpus có 3 mức, TREC DL có 4 mức), nên nDCG phải tính với $2^{\mathrm{rel}}-1$ chứ không phải nhãn nhị phân. Mọi điểm \ndcg\ và \mrr\ trong báo cáo được ghi trên thang 0--100.
 
 \subsection{Giao thức đo thời gian và bộ nhớ}
 \label{sec:protocol}
@@ -1232,8 +1232,8 @@ ColBERTv2 & SciFact \ndcg & 69,3 & 69,16\\
 ColBERTv2 & NFCorpus \ndcg & 33,8 & 34,40\\
 ColBERTv2 & FiQA \ndcg & 35,6 & 35,80\\
 ColBERTv2 & Quora \ndcg & 85,2 & 85,67\\
-BM25 (Lucene) & MS MARCO dev-small \mrr & 18,4 (Anserini) & 18,38\\
-BM25 (Lucene) & TREC DL19 \ndcg & 50,6 (Anserini) & 50,72\\
+BM25 (Lucene) & MS MARCO dev-small \mrr & 18,4 (Anserini~\cite{yang2017}) & 18,38\\
+BM25 (Lucene) & TREC DL19 \ndcg & 50,6 (Anserini~\cite{yang2017}) & 50,72\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1701,28 +1701,59 @@ Các hướng khác có thể xét sau: sparsity thích ứng theo phân bố k�
 \begin{thebibliography}{99}
 \addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
 \singlespacing
-\bibitem{ssr} L. Guo, Y. Wang, T. Wen, A. Feng, S. Jegelka, C. You, ``No More K-means: Single-Stage Sparse Coding for Efficient Multi-Vector Retrieval,'' \emph{Proc. 43rd International Conference on Machine Learning (ICML)}, PMLR 306, 2026. arXiv:2605.30120 (v3 03/06/2026; v4 28/09/2026).
-\bibitem{colbert} O. Khattab, M. Zaharia, ``ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT,'' \emph{Proc. SIGIR}, 2020, pp. 39--48.
-\bibitem{colbertv2} K. Santhanam, O. Khattab, J. Saad-Falcon, C. Potts, M. Zaharia, ``ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction,'' \emph{Proc. NAACL}, 2022, pp. 3715--3734.
-\bibitem{plaid} K. Santhanam, O. Khattab, C. Potts, M. Zaharia, ``PLAID: An Efficient Engine for Late Interaction Retrieval,'' \emph{Proc. CIKM}, 2022, pp. 1747--1756.
-\bibitem{coil} L. Gao, Z. Dai, J. Callan, ``COIL: Revisit Exact Lexical Match in Information Retrieval with Contextualized Inverted List,'' \emph{Proc. NAACL}, 2021.
-\bibitem{xtr} J. Lee, Z. Dai, S. M. K. Duddu, T. Lei, I. Naim, M.-W. Chang, V. Zhao, ``Rethinking the Role of Token Retrieval in Multi-Vector Retrieval,'' \emph{Advances in Neural Information Processing Systems}, vol. 36, 2023.
-\bibitem{warp} J. L. Scheerer, M. Zaharia, C. Potts, G. Alonso, O. Khattab, ``WARP: An Efficient Engine for Multi-Vector Retrieval,'' \emph{Proc. SIGIR}, 2025, pp. 2504--2512.
-\bibitem{emvb} F. M. Nardini, C. Rulli, R. Venturini, ``Efficient Multi-Vector Dense Retrieval with Bit Vectors,'' \emph{Proc. ECIR}, 2024.
-\bibitem{splade} T. Formal, B. Piwowarski, S. Clinchant, ``SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking,'' \emph{Proc. SIGIR}, 2021; T. Formal, C. Lassance, B. Piwowarski, S. Clinchant, ``SPLADE v2,'' arXiv:2109.10086, 2021; C. Lassance, H. Déjean, T. Formal, S. Clinchant, ``SPLADE-v3: New Baselines for SPLADE,'' arXiv:2403.06789, 2024.
-\bibitem{topksae} L. Gao, T. Dupré la Tour, H. Tillman, G. Goh, R. Troll, A. Radford, I. Sutskever, J. Leike, J. Wu, ``Scaling and Evaluating Sparse Autoencoders,'' arXiv:2406.04093, 2024 (ICLR 2025).
-\bibitem{sparsecoding} H. Lee, A. Battle, R. Raina, A. Y. Ng, ``Efficient Sparse Coding Algorithms,'' \emph{Advances in Neural Information Processing Systems}, vol. 19, 2006.
-\bibitem{beir} N. Thakur, N. Reimers, A. Rücklé, A. Srivastava, I. Gurevych, ``BEIR: A Heterogeneous Benchmark for Zero-shot Evaluation of Information Retrieval Models,'' \emph{NeurIPS Datasets and Benchmarks}, 2021.
-\bibitem{msmarco} T. Nguyen, M. Rosenberg, X. Song, J. Gao, S. Tiwary, R. Majumder, L. Deng, ``MS MARCO: A Human Generated MAchine Reading COmprehension Dataset,'' \emph{CoCo@NeurIPS}, 2016.
-\bibitem{limit} O. Weller, M. Boratko, I. Naim, J. Lee, ``On the Theoretical Limitations of Embedding-Based Retrieval,'' arXiv:2508.21038, 2025.
-\bibitem{bm25} S. E. Robertson, S. Walker, S. Jones, M. Hancock-Beaulieu, M. Gatford, ``Okapi at TREC-3,'' \emph{Proc. TREC-3}, 1995.
-\bibitem{ndcg} K. Järvelin, J. Kekäläinen, ``Cumulated Gain-based Evaluation of IR Techniques,'' \emph{ACM Transactions on Information Systems}, vol. 20, no. 4, pp. 422--446, 2002.
-\bibitem{anserini} P. Yang, H. Fang, J. Lin, ``Anserini: Enabling the Use of Lucene for Information Retrieval Research,'' \emph{Proc. SIGIR}, 2017, pp. 1253--1256.
-\bibitem{pylate} A. Chaffin, R. Sourty, ``PyLate: Flexible Training and Retrieval for Late Interaction Models,'' LightOn, 2024. \url{https://github.com/lightonai/pylate}.
-\bibitem{ssrcode} Mã nguồn chính thức của \ssr: \url{https://github.com/Y-Research-SBU/SSR}, commit \texttt{c64bc05} (26/06/2026), truy cập 12/10/2026. Issue \#1 ``Difficulty reproducing BEIR numbers from Table 1'' (24/07/2026), \url{https://github.com/Y-Research-SBU/SSR/issues/1}; Issue \#2 ``Is the 4k reconstruction loss missing from the training objective?'' (04/08/2026), \url{https://github.com/Y-Research-SBU/SSR/issues/2}.
-\bibitem{ssrckpt} Checkpoint \ssr-tok: \url{https://huggingface.co/Y-Research-Group/SSR}, đưa lên 05/10/2026, nhóm tải ngày 11/10/2026.
-\bibitem{ssrpmlr} Bản chính thức trên PMLR: \url{https://proceedings.mlr.press/v306/guo26x.html}, truy cập 12/10/2026.
-\bibitem{nhom} Mã nguồn, patch, script đánh giá, kết quả và log của nhóm: \url{\RepoNhom}.
+\bibitem{babakhin2025} Babakhin, Y., Osmulski, R., Ak, R., Moreira, G., Xu, M., Schifferer, B., Liu, B., và Oldridge, E. Llama-embed-nemotron-8b: A universal text embedding model for multilingual and cross-lingual tasks. arXiv:2511.07025, 2025.
+\bibitem{bian2025} Bian, Z., Yiu, M. L., và Tang, B. IGP: Efficient multi-vector retrieval via proximity graph index. Trong \emph{Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 2524--2533, 2025.
+\bibitem{bondarenko2020} Bondarenko, A., Fröbe, M., Beloucif, M., Gienapp, L., Ajjour, Y., Panchenko, A., Biemann, C., Stein, B., Wachsmuth, H., Potthast, M., và cộng sự. Overview of Touché 2020: Argument retrieval. Trong \emph{International Conference of the Cross-Language Evaluation Forum for European Languages}, tr. 384--395. Springer, 2020.
+\bibitem{boteva2016} Boteva, V., Gholipour, D., Sokolov, A., và Riezler, S. A full-text learning to rank dataset for medical information retrieval. Trong \emph{Advances in Information Retrieval (ECIR)}, tr. 716--722. Springer, 2016.
+\bibitem{bussmann2024} Bussmann, B., Leask, P., và Nanda, N. BatchTopK sparse autoencoders. arXiv:2412.06410, 2024.
+\bibitem{chaffin2024} Chaffin, A. và Sourty, R. PyLate: Flexible training and retrieval for late interaction models. LightOn, 2024. URL \url{https://github.com/lightonai/pylate}.
+\bibitem{cohan2020} Cohan, A., Feldman, S., Beltagy, I., Downey, D., và Weld, D. S. SPECTER: Document-level representation learning using citation-informed transformers. arXiv:2004.07180, 2020.
+\bibitem{cunningham2023} Cunningham, H., Ewart, A., Riggs, L., Huben, R., và Sharkey, L. Sparse autoencoders find highly interpretable features in language models. arXiv:2309.08600, 2023.
+\bibitem{devlin2019} Devlin, J., Chang, M.-W., Lee, K., và Toutanova, K. BERT: Pre-training of deep bidirectional transformers for language understanding. Trong \emph{Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies}, tập 1, tr. 4171--4186, 2019.
+\bibitem{dhulipala2024} Dhulipala, L., Hadian, M., Jayaram, R., Lee, J., và Mirrokni, V. MUVERA: Multi-vector retrieval via fixed dimensional encodings. arXiv:2405.19504, 2024.
+\bibitem{diggelmann2020} Diggelmann, T., Boyd-Graber, J., Bulian, J., Ciaramita, M., và Leippold, M. Climate-FEVER: A dataset for verification of real-world climate claims. arXiv:2012.00614, 2020.
+\bibitem{douze2024} Douze, M., Guzhva, A., Deng, C., Johnson, J., Szilvasy, G., Mazaré, P.-E., Lomeli, M., Hosseini, L., và Jégou, H. The FAISS library. arXiv:2401.08281, 2024.
+\bibitem{engels2023} Engels, J., Coleman, B., Lakshman, V., và Shrivastava, A. DESSERT: An efficient algorithm for vector set search with vector set queries. \emph{Advances in Neural Information Processing Systems}, 36:67972--67992, 2023.
+\bibitem{formal2021a} Formal, T., Lassance, C., Piwowarski, B., và Clinchant, S. SPLADE v2: Sparse lexical and expansion model for information retrieval. arXiv:2109.10086, 2021.
+\bibitem{formal2021b} Formal, T., Piwowarski, B., và Clinchant, S. SPLADE: Sparse lexical and expansion model for first stage ranking. Trong \emph{Proceedings of the 44th International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 2288--2292, 2021.
+\bibitem{gao2021} Gao, L., Dai, Z., và Callan, J. COIL: Revisit exact lexical match in information retrieval with contextualized inverted list. arXiv:2104.07186, 2021.
+\bibitem{gao2024} Gao, L., la Tour, T. D., Tillman, H., Goh, G., Troll, R., Radford, A., Sutskever, I., Leike, J., và Wu, J. Scaling and evaluating sparse autoencoders. arXiv:2406.04093, 2024.
+\bibitem{ssr} Guo, L., Wang, Y., Wen, T., Feng, A., Jegelka, S., và You, C. No More K-means: Single-stage sparse coding for efficient multi-vector retrieval. Trong \emph{Proceedings of the 43rd International Conference on Machine Learning (ICML)}, PMLR 306, 2026. arXiv:2605.30120 (v3 03/06/2026; v4 28/09/2026). URL \url{https://proceedings.mlr.press/v306/guo26x.html}, truy cập 12/10/2026.
+\bibitem{guo2026} Guo, L., Wang, Y., Wen, T., Wang, Y., Feng, A., Chen, B., Jegelka, S., và You, C. CSRv2: Unlocking ultra-sparse embeddings. Trong \emph{International Conference on Learning Representations (ICLR)}, 2026.
+\bibitem{hasibi2017} Hasibi, F., Nikolaev, F., Xiong, C., Balog, K., Bratsberg, S. E., Kotov, A., và Callan, J. DBpedia-entity v2: A test collection for entity search. Trong \emph{Proceedings of the 40th International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 1265--1268, 2017.
+\bibitem{jarvelin2002} Järvelin, K. và Kekäläinen, J. Cumulated gain-based evaluation of IR techniques. \emph{ACM Transactions on Information Systems}, 20(4):422--446, 2002.
+\bibitem{khattab2020} Khattab, O. và Zaharia, M. ColBERT: Efficient and effective passage search via contextualized late interaction over BERT. Trong \emph{Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 39--48, 2020.
+\bibitem{kwiatkowski2019} Kwiatkowski, T., Palomaki, J., Redfield, O., Collins, M., Parikh, A., Alberti, C., Epstein, D., Polosukhin, I., Devlin, J., Lee, K., và cộng sự. Natural Questions: A benchmark for question answering research. \emph{Transactions of the Association for Computational Linguistics}, 7:453--466, 2019.
+\bibitem{lassance2024} Lassance, C., Déjean, H., Formal, T., và Clinchant, S. SPLADE-v3: New baselines for SPLADE. arXiv:2403.06789, 2024.
+\bibitem{lee2006} Lee, H., Battle, A., Raina, R., và Ng, A. Efficient sparse coding algorithms. \emph{Advances in Neural Information Processing Systems}, 19, 2006.
+\bibitem{lee2023} Lee, J., Dai, Z., Duddu, S. M. K., Lei, T., Naim, I., Chang, M.-W., và Zhao, V. Rethinking the role of token retrieval in multi-vector retrieval. \emph{Advances in Neural Information Processing Systems}, 36:15384--15405, 2023.
+\bibitem{li2023a} Li, M., Lin, S.-C., Oguz, B., Ghoshal, A., Lin, J., Mehdad, Y., Yih, W.-t., và Chen, X. CITADEL: Conditional token interaction via dynamic lexical routing for efficient and effective multi-vector retrieval. Trong \emph{Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)}, tr. 11891--11907, 2023.
+\bibitem{maia2018} Maia, M., Handschuh, S., Freitas, A., Davis, B., McDermott, R., Zarrouk, M., và Balahur, A. WWW'18 open challenge: Financial opinion mining and question answering. Trong \emph{Companion Proceedings of The Web Conference 2018}, tr. 1941--1942, 2018.
+\bibitem{muennighoff2022} Muennighoff, N., Tazi, N., Magne, L., và Reimers, N. MTEB: Massive text embedding benchmark. arXiv:2210.07316, 2022.
+\bibitem{nardini2024} Nardini, F. M., Rulli, C., và Venturini, R. Efficient multi-vector dense retrieval using bit vectors. arXiv:2404.02805, 2024.
+\bibitem{nguyen2016} Nguyen, T., Rosenberg, M., Song, X., Gao, J., Tiwary, S., Majumder, R., và Deng, L. MS MARCO: A human-generated machine reading comprehension dataset. arXiv:1611.09268, 2016.
+\bibitem{qian2022} Qian, Y., Lee, J., Duddu, S. M. K., Dai, Z., Brahma, S., Naim, I., Lei, T., và Zhao, V. Y. Multi-vector retrieval as sparse alignment. arXiv:2211.01267, 2022.
+\bibitem{rajamanoharan2024a} Rajamanoharan, S., Conmy, A., Smith, L., Lieberum, T., Varma, V., Kramár, J., Shah, R., và Nanda, N. Improving dictionary learning with gated sparse autoencoders. arXiv:2404.16014, 2024.
+\bibitem{rajamanoharan2024b} Rajamanoharan, S., Lieberum, T., Sonnerat, N., Conmy, A., Varma, V., Kramár, J., và Nanda, N. Jumping ahead: Improving reconstruction fidelity with JumpReLU sparse autoencoders. arXiv:2407.14435, 2024.
+\bibitem{robertson1995} Robertson, S. E., Walker, S., Jones, S., Hancock-Beaulieu, M. M., Gatford, M., và cộng sự. Okapi at TREC-3. British Library Research and Development Department, 1995.
+\bibitem{santhanam2022a} Santhanam, K., Khattab, O., Potts, C., và Zaharia, M. PLAID: An efficient engine for late interaction retrieval. Trong \emph{Proceedings of the 31st ACM International Conference on Information \& Knowledge Management}, tr. 1747--1756, 2022.
+\bibitem{santhanam2022b} Santhanam, K., Khattab, O., Saad-Falcon, J., Potts, C., và Zaharia, M. ColBERTv2: Effective and efficient retrieval via lightweight late interaction. Trong \emph{Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies}, tr. 3715--3734, 2022.
+\bibitem{scheerer2025} Scheerer, J. L., Zaharia, M., Potts, C., Alonso, G., và Khattab, O. WARP: An efficient engine for multi-vector retrieval. Trong \emph{Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 2504--2512, 2025.
+\bibitem{templeton2024} Templeton, A., Conerly, T., Marcus, J., Lindsey, J., Bricken, T., và cộng sự. Scaling monosemanticity: Extracting interpretable features from Claude 3 Sonnet. \emph{Transformer Circuits Thread}, 2024. URL \url{https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html}.
+\bibitem{thakur2021} Thakur, N., Reimers, N., Rücklé, A., Srivastava, A., và Gurevych, I. BEIR: A heterogeneous benchmark for zero-shot evaluation of information retrieval models. arXiv:2104.08663, 2021.
+\bibitem{thorne2018} Thorne, J., Vlachos, A., Christodoulopoulos, C., và Mittal, A. FEVER: A large-scale dataset for fact extraction and verification. arXiv:1803.05355, 2018.
+\bibitem{voorhees2021} Voorhees, E., Alam, T., Bedrick, S., Demner-Fushman, D., Hersh, W. R., Lo, K., Roberts, K., Soboroff, I., và Wang, L. L. TREC-COVID: Constructing a pandemic information retrieval test collection. \emph{ACM SIGIR Forum}, 54:1--12, 2021.
+\bibitem{wachsmuth2018} Wachsmuth, H., Syed, S., và Stein, B. Retrieval of the best counterargument without prior topic knowledge. Trong \emph{Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)}, tr. 241--251, 2018.
+\bibitem{wadden2020} Wadden, D., Lin, S., Lo, K., Wang, L. L., van Zuylen, M., Cohan, A., và Hajishirzi, H. Fact or fiction: Verifying scientific claims. arXiv:2004.14974, 2020.
+\bibitem{wang2023} Wang, L., Yang, N., Huang, X., Yang, L., Majumder, R., và Wei, F. Improving text embeddings with large language models. arXiv:2401.00368, 2023.
+\bibitem{weller2025} Weller, O., Boratko, M., Naim, I., và Lee, J. On the theoretical limitations of embedding-based retrieval. arXiv:2508.21038, 2025.
+\bibitem{wen2025} Wen, T., Wang, Y., Zeng, Z., Peng, Z., Su, Y., Liu, X., Chen, B., Liu, H., Jegelka, S., và You, C. Beyond Matryoshka: Revisiting sparse coding for adaptive representation. Trong \emph{International Conference on Machine Learning}, 2025.
+\bibitem{yang2017} Yang, P., Fang, H., và Lin, J. Anserini: Enabling the use of Lucene for information retrieval research. Trong \emph{Proceedings of the 40th International ACM SIGIR Conference on Research and Development in Information Retrieval}, tr. 1253--1256, 2017.
+\bibitem{yang2018} Yang, Z., Qi, P., Zhang, S., Bengio, Y., Cohen, W., Salakhutdinov, R., và Manning, C. D. HotpotQA: A dataset for diverse, explainable multi-hop question answering. Trong \emph{Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing}, tr. 2369--2380, 2018.
+\bibitem{zhang2025b} Zhang, Y., Li, M., Long, D., Zhang, X., Lin, H., Yang, B., Xie, P., Yang, A., Liu, D., Lin, J., Huang, F., và Zhou, J. Qwen3 embedding: Advancing text embedding and reranking through foundation models. arXiv:2506.05176, 2025.
+\bibitem{ssrcode} Mã nguồn chính thức của \ssr. URL \url{https://github.com/Y-Research-SBU/SSR}, commit \texttt{c64bc05} (26/06/2026), truy cập 12/10/2026. Issue \#1 ``Difficulty reproducing BEIR numbers from Table 1'' (24/07/2026), \url{https://github.com/Y-Research-SBU/SSR/issues/1}; Issue \#2 ``Is the 4k reconstruction loss missing from the training objective?'' (04/08/2026), \url{https://github.com/Y-Research-SBU/SSR/issues/2}.
+\bibitem{ssrckpt} Checkpoint \ssr-tok. URL \url{https://huggingface.co/Y-Research-Group/SSR}, đưa lên 05/10/2026, nhóm tải ngày 11/10/2026.
+\bibitem{nhom} Mã nguồn, patch, script đánh giá, kết quả và log của nhóm. URL \url{\RepoNhom}.
 \end{thebibliography}
 
 % =====================================================================
@@ -1888,27 +1919,27 @@ Phụ lục này tổng hợp các kết quả công bố không trực tiếp p
 \toprule
 \textbf{Bộ} & \textbf{Viết tắt} & \textbf{Lĩnh vực / nhiệm vụ} & \textbf{Vai trò}\\
 \midrule
-MS MARCO passage & MS & Truy vấn Bing, 8,84 triệu đoạn & Huấn luyện + in-domain\\
-ArguAna & AR & Phản biện lập luận & BEIR (zero-shot)\\
-Climate-FEVER & CF & Kiểm chứng khí hậu & BEIR\\
-TREC-COVID & CV & Y sinh COVID & BEIR\\
-DBpedia & DB & Tìm thực thể & BEIR\\
-FEVER & FE & Kiểm chứng sự kiện & BEIR\\
-FiQA-2018 & FQ & Tài chính & BEIR\\
-HotpotQA & HQ & Hỏi đáp nhiều bước & BEIR\\
-NFCorpus & NF & Y học dinh dưỡng & BEIR\\
-NQ & NQ & Hỏi đáp Google & BEIR\\
+MS MARCO passage~\cite{nguyen2016} & MS & Truy vấn Bing, 8,84 triệu đoạn & Huấn luyện + in-domain\\
+ArguAna~\cite{wachsmuth2018} & AR & Phản biện lập luận & BEIR (zero-shot)\\
+Climate-FEVER~\cite{diggelmann2020} & CF & Kiểm chứng khí hậu & BEIR\\
+TREC-COVID~\cite{voorhees2021} & CV & Y sinh COVID & BEIR\\
+DBpedia~\cite{hasibi2017} & DB & Tìm thực thể & BEIR\\
+FEVER~\cite{thorne2018} & FE & Kiểm chứng sự kiện & BEIR\\
+FiQA-2018~\cite{maia2018} & FQ & Tài chính & BEIR\\
+HotpotQA~\cite{yang2018} & HQ & Hỏi đáp nhiều bước & BEIR\\
+NFCorpus~\cite{boteva2016} & NF & Y học dinh dưỡng & BEIR\\
+NQ~\cite{kwiatkowski2019} & NQ & Hỏi đáp Google & BEIR\\
 Quora & QU & Câu hỏi trùng lặp & BEIR\\
-SCIDOCS & SD & Trích dẫn khoa học & BEIR\\
-SciFact & SF & Kiểm chứng khoa học & BEIR\\
-Touché-2020 & TO & Tranh luận & BEIR\\
-LoTTE & -- & Chủ đề đuôi dài, 5 miền & Độ bền long-tail\\
-MS MARCO document & -- & Văn bản dài ($\approx$1.131 token) & Văn bản dài\\
-LIMIT & -- & Kiểm tra giới hạn biểu diễn & Stress test\\
+SCIDOCS~\cite{cohan2020} & SD & Trích dẫn khoa học & BEIR\\
+SciFact~\cite{wadden2020} & SF & Kiểm chứng khoa học & BEIR\\
+Touché-2020~\cite{bondarenko2020} & TO & Tranh luận & BEIR\\
+LoTTE~\cite{santhanam2022b} & -- & Chủ đề đuôi dài, 5 miền & Độ bền long-tail\\
+MS MARCO document~\cite{nguyen2016} & -- & Văn bản dài ($\approx$1.131 token) & Văn bản dài\\
+LIMIT~\cite{weller2025} & -- & Kiểm tra giới hạn biểu diễn & Stress test\\
 \bottomrule
 \end{tabular}
 \end{table}
-Bảng~\ref{tab:datasets-paper} liệt kê các bộ dữ liệu. BEIR~\cite{beir} gồm 18 tập dữ liệu truy hồi zero-shot; bài dùng 13 tập. MS~MARCO passage~\cite{msmarco} có tập dev-small 6.980 truy vấn (nhãn nhị phân) và TREC DL 2019 với 43 truy vấn có nhãn 4 mức. Ngoài \mrr\ và \ndcg, bài còn dùng Recall@$k$ và Success@5 (cho LoTTE: tỉ lệ truy vấn có ít nhất một tài liệu đúng trong top-5). Độ trễ đo trên GPU A100 40~GB sau 1.000 truy vấn khởi động; các số liệu CPU đo trên Xeon Platinum 8275CL 96 lõi.
+Bảng~\ref{tab:datasets-paper} liệt kê các bộ dữ liệu. BEIR~\cite{thakur2021} gồm 18 tập dữ liệu truy hồi zero-shot; bài dùng 13 tập. MS~MARCO passage~\cite{nguyen2016} có tập dev-small 6.980 truy vấn (nhãn nhị phân) và TREC DL 2019 với 43 truy vấn có nhãn 4 mức. Ngoài \mrr\ và \ndcg, bài còn dùng Recall@$k$ và Success@5 (cho LoTTE: tỉ lệ truy vấn có ít nhất một tài liệu đúng trong top-5). Độ trễ đo trên GPU A100 40~GB sau 1.000 truy vấn khởi động; các số liệu CPU đo trên Xeon Platinum 8275CL 96 lõi.
 
 \section{Bảng 1 đầy đủ}
 \begin{sidewaystable}
@@ -1953,9 +1984,9 @@ Với backbone Llama-embed-nemotron-8b đóng băng (Bảng~\ref{tab:llm-paper})
 \toprule
 \textbf{Mô hình} & \textbf{Trung bình}\\
 \midrule
-Llama-embed-nemotron-8b (gốc) & 65,8\\
-Qwen3-Embedding-8B & 66,0\\
-e5-mistral-7b & 58,8\\
+Llama-embed-nemotron-8b~\cite{babakhin2025} (gốc) & 65,8\\
+Qwen3-Embedding-8B~\cite{zhang2025b} & 66,0\\
+e5-mistral-7b~\cite{wang2023} & 58,8\\
 Llama-8B + lớp chiếu tuyến tính & 66,1\\
 Llama-8B + \ssr-tok & 66,4\\
 Llama-8B + \ssr-CLS & \textbf{67,1}\\

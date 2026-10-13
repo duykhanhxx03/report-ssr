@@ -1,7 +1,7 @@
 # Báo cáo bài tập lớn – LaTeX
 
 - `baocao.tex`: toàn bộ báo cáo trong một file (bìa, phân công, tóm tắt, mục lục, danh mục hình/bảng/từ viết tắt, 5 chương, tài liệu tham khảo, 5 phụ lục).
-- `baocao.pdf`: bản biên dịch sẵn (53 trang: 30 trang thân bài, còn lại là phần đầu, tài liệu tham khảo và phụ lục).
+- `baocao.pdf`: bản biên dịch sẵn (54 trang: 30 trang thân bài, còn lại là phần đầu, tài liệu tham khảo 53 mục và phụ lục).
 - `figures/`: hai hình gốc của bài báo (`paper_fig3_efficiency.pdf`, `paper_fig4_sensitivity.pdf`, Hình 3 và 4 của bài, trích từ bản dịch). Mọi sơ đồ và biểu đồ khác vẽ bằng TikZ/pgfplots ngay trong file `.tex`.
 - `logo_ptit.png`: logo trên trang bìa.
 - `backup_v3/`: bản trước khi chuyển bố cục theo `../KE_HOACH_CAI_THIEN_BAO_CAO.md` (5 chương mang tên tiếng Anh theo đề cương ban đầu, 52 trang). Chỉ giữ để đối chiếu; nhóm đã chọn giữ tên chương tiếng Việt hiện tại.

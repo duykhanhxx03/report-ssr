@@ -7,7 +7,7 @@ Báo cáo môn **Tìm kiếm và truy xuất thông tin** (Nhóm 9, lớp M25CQH
 | Đường dẫn | Nội dung |
 |---|---|
 | `latex/baocao.tex` | Mã LaTeX của báo cáo (một file): bìa, phân công, tóm tắt, mục lục, 5 chương, tài liệu tham khảo và 5 phụ lục (chi tiết sai lệch mã nguồn; chứng minh định lý; kết quả khác của bài báo; nguồn số liệu hiệu năng; hướng dẫn chạy lại). |
-| `latex/baocao.pdf` | Bản PDF biên dịch sẵn (53 trang, 30 trang thân bài). |
+| `latex/baocao.pdf` | Bản PDF biên dịch sẵn (54 trang, 30 trang thân bài). |
 | `latex/figures/` | Hai hình gốc của bài báo (Hình 3 và 4); các hình còn lại vẽ bằng TikZ/pgfplots trong file `.tex`. |
 | `latex/README.md` | Hướng dẫn biên dịch và các chỗ cần kiểm tra (tên nhóm, thành viên, link repo). |
 | `latex/backup_v3/` | Bản trước khi chuyển bố cục (tên chương tiếng Anh theo đề cương ban đầu), để đối chiếu. |
