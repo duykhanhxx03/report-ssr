@@ -40,6 +40,7 @@
 \graphicspath{{figures/}{./}}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{tabularx}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{multirow}
 \usepackage{longtable}
@@ -207,25 +208,24 @@ for Efficient Multi-Vector Retrieval}\\[1.8cm]
 % =====================================================================
 \pagenumbering{roman}
 \begin{center}
-{\bfseries PHÂN CÔNG NHIỆM VỤ NHÓM THỰC HIỆN}
+{\bfseries BẢNG PHÂN CÔNG NHÓM}
 \end{center}
-\begin{center}
-\begin{tabular}{|c|p{8.6cm}|>{\raggedright\arraybackslash}p{4.4cm}|}
+{\small
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}p{2.9cm}|>{\centering\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}X|}
 \hline
-\textbf{TT} & \textbf{Công việc / Nhiệm vụ} & \textbf{Học viên thực hiện}\\
+\textbf{STT} & \textbf{Nội dung phụ trách} & \textbf{Chương, mục} & \textbf{Người phụ trách} & \textbf{Công việc cụ thể}\\
 \hline
-1 & Điều phối, tổng hợp và biên tập báo cáo; Chương 1 ``Bài toán, bối cảnh và mục tiêu'' & \ThanhVienA\\
+1 & Bài toán, bối cảnh và mục tiêu & 1 & \ThanhVienE & Giới thiệu bài toán SVR/MVR, các phương pháp trước đây, hạn chế của K-means và động lực đề xuất SSR.\\
 \hline
-2 & Dịch bài báo; Chương 2 ``Biểu diễn sparse và huấn luyện SSR'' phần biểu diễn sparse, sparse MaxSim và cận sai lệch (mục 2.1--2.5); Phụ lục B & \ThanhVienB\\
+2 & Biểu diễn sparse và late interaction & 2 (mục 2.1--2.5) & \ThanhVienA & Tìm hiểu kiến trúc SSR, Sparse Autoencoder, sparse coding, sparse MaxSim và cách tính similarity; tham khảo Phụ lục A của bài báo để hiểu ý nghĩa lý thuyết (chứng minh ở Phụ lục B của báo cáo).\\
 \hline
-3 & Dịch bài báo; Chương 2 ``Biểu diễn sparse và huấn luyện SSR'' phần hybrid training và đối chiếu thiết lập huấn luyện với mã nguồn (mục 2.6--2.8) & \ThanhVienC\\
+3 & Hybrid training của sparse projector & 2 (mục 2.6--2.8) & \ThanhVienB & Tìm hiểu TopK Sparse Autoencoder, reconstruction loss, contrastive loss và hàm mục tiêu huấn luyện tổng; giải thích vai trò của các hàm loss.\\
 \hline
-4 & Cài đặt môi trường, chạy lại mã nguồn và checkpoint, rà soát và sửa lỗi, tối ưu kernel truy hồi, đo so với ColBERTv2/PLAID; Chương 3 ``Lập chỉ mục và truy hồi''; Chương 4 ``Tái lập và kiểm chứng'' (mục 4.2--4.7); Chương 5 ``Cải tiến, thảo luận và kết luận'' (mục 5.1--5.5); Phụ lục A, D, E & \ThanhVienD\\
+4 & Lập chỉ mục và truy hồi & 3 & \ThanhVienC & Tìm hiểu inverted index mức neuron, posting list, SSR, SSR++, coarse-to-fine pruning và phân tích độ phức tạp.\\
 \hline
-5 & Chương 4 ``Tái lập và kiểm chứng'' phần kết quả công bố của bài báo (mục 4.1) và Phụ lục C; Chương 5 ``Cải tiến, thảo luận và kết luận'' phần thảo luận và kết luận (mục 5.6--5.7); làm slide trình bày & \ThanhVienE\\
+5 & Tái lập và kiểm chứng; cải tiến, thảo luận và kết luận & 4, 5; Phụ lục A, C, D, E & \ThanhVienD & Tổng hợp kết quả thực nghiệm; nghiên cứu mã nguồn SSR; tìm hiểu cách cài đặt, đề xuất và thử nghiệm cải tiến; trình bày thảo luận và kết luận.\\
 \hline
-\end{tabular}
-\end{center}
+\end{tabularx}}
 
 \vspace{0.6cm}
 \begin{center}

@@ -31,4 +31,4 @@ Dùng **XeLaTeX** (file dùng `fontspec` với font TeX Gyre Termes / Latin Mode
 - `\ThanhVienA` … `\ThanhVienE` (họ tên – mã học viên)
 - `\RepoNhom` (link GitHub của nhóm)
 
-Bảng phân công nhiệm vụ và bảng tự đánh giá nằm ngay sau trang bìa (có chú thích trong file); phân công ghi đúng tên năm chương hiện tại kèm các mục phụ trách, nhóm sửa người thực hiện cho đúng thực tế nếu cần. Mục lục chỉ hiện tới cấp section (`\setcounter{tocdepth}{1}`); đổi lại 2 nếu quy định môn học yêu cầu.
+Bảng phân công nhóm và bảng tự đánh giá nằm ngay sau trang bìa. Bảng phân công lấy theo bảng của nhóm (Khamsing: Chương 1; Toàn: Chương 2 mục 2.1–2.5; Thọ: Chương 2 mục 2.6–2.8; Nguyên: Chương 3; Khánh: Chương 4, 5 và phụ lục), đã đổi số section của bài báo sang chương, mục của báo cáo. Bảng tự đánh giá đang để điểm mặc định. Mục lục chỉ hiện tới cấp section (`\setcounter{tocdepth}{1}`); đổi lại 2 nếu quy định môn học yêu cầu.
