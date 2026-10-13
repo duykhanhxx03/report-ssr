@@ -142,3 +142,43 @@ Cột "Giải thích" trong bảng từ viết tắt vẫn để tiếng Việt 
 
 - Overleaf: tải lên cả thư mục `latex/` (gồm `figures/` và `logo_ptit.png`), Menu, Compiler, XeLaTeX, Recompile hai lần.
 - Máy cá nhân: `xelatex baocao.tex` hai lần, hoặc `tectonic baocao.tex`.
+
+## 11. Cải thiện theo `KE_HOACH_CAI_THIEN_BAO_CAO.md` (lần 4, 13/10/2026)
+
+Làm theo lộ trình 7 đợt ở mục 8 của kế hoạch. Bản trước khi sửa được giữ ở `latex/backup_v3/` (tex và pdf, 52 trang).
+
+**Bố cục mới (phương án mục 2 của kế hoạch, giữ 5 chương).** Tên chương Việt hóa; nội dung chuyển như sau:
+
+| Chương mới | Nguồn từ bản cũ | Trang |
+|---|---|---|
+| 1. Bài toán, bối cảnh và mục tiêu | Chương 1, rút 1.1.1, 1.1.2, 1.5.2, 1.6; thêm bốn câu hỏi kiểm chứng K1–K4 | 1–5 |
+| 2. Biểu diễn thưa và huấn luyện SSR | Chương 2 + Chương 3; gộp hai mục giới thiệu SAE; chứng minh Định lý A/B xuống Phụ lục B; bỏ Hình phân rã sai số và Hình ablation; bảng/hình độ nhạy xuống Phụ lục C | 6–12 |
+| 3. Lập chỉ mục và truy hồi | Chương 4; gộp 4.1 vào 4.2; 4.6 (hiệu quả SSR++ theo bài) và bảng chi phí chỉ mục chuyển sang Chương 4 mới | 13–16 |
+| 4. Tái lập và kiểm chứng | Mục 5.1–5.3 cũ, chọn lọc; thêm Bảng 4.1 (câu hỏi, phép kiểm tra, kết quả, giới hạn), Bảng 4.2 (trích Bảng 1), Bảng 4.5 (phiên bản và độ đo, dạng bảng), mục giao thức đo; cây repo và log xuống phụ lục; bảng trả lời GitHub gộp vào 2.8 và 4.4 | 17–24 |
+| 5. Cải tiến, thảo luận và kết luận | Mục 5.4–5.6 cũ; 5.5.3 rút thành một đoạn "Điều kiện triển khai", 5.5.4 rút thành một câu; kết luận viết lại theo K1–K4; hướng phát triển còn ba ưu tiên | 25–30 |
+
+Phụ lục: A (chi tiết sai lệch, thêm điểm 10 và trích log), B (chứng minh), C (kết quả khác của bài: bộ dữ liệu, Bảng 1 đầy đủ dạng trang ngang, LLM, LoTTE, LIMIT, CPU, hai hình gốc, h/K, K thích ứng, độ nhạy), D (nguồn số liệu hiệu năng), E (hướng dẫn chạy lại kèm cây repo). Nhãn LaTeX cũ giữ nguyên; thêm `ch:intro`, `ch:repro`, `ch:opt`, `sec:protocol`, `sec:prune-bound`, `app:proofs`, `app:paper`, `app:sources`.
+
+**Sửa số liệu và phạm vi kết luận (P0.1–P0.6).**
+
+- P0.1: thống nhất "10 điểm sai lệch, đã xử lý 9 điểm bằng bản sửa hoặc bổ sung cấu hình; `token_skip_mode` chưa triển khai" ở tóm tắt, 4.4, 5.7 và Bảng 4.9 (cột trạng thái: 7 "Đã sửa", "Thêm preset", "Sửa theo issue", "Chưa triển khai"). Kiểm tra lại với patch (16 file) và test (7 trong `SSR/tests`, 9 trong `opt/tests`). Ghi rõ `token_skip_mode` là nguồn sai lệch còn lại có thể ảnh hưởng tái lập.
+- P0.2: tỉ số tăng tốc trên FiQA tính trên cùng 100 query đầu (Bảng 5.2, Hình 5.2): repo exact 1.635 ms, base exact 2.332 ms, `fast_hyb` 326 / 84 / 55 ms (1 / 6 / 12 luồng), GPU 56 ms; tức 29,6 lần so với repo exact và 42,2 lần so với base exact ở 12 luồng (bản cũ ghi 30 lần vì ghép 1.635 ms của 100 query với 54,4 ms của 648 query). Phân bố độ trễ trên 648 query để riêng (Bảng 5.3). Phân biệt "repo exact" (chunk 5.000, dựng lại mỗi lần chạy) và "base exact" (một chỉ mục toàn corpus) ở 5.1.
+- P0.3: Phụ lục D liệt kê từng số liệu với file, tập query, luồng/thiết bị và phạm vi đo. Mục 4.2.2 ghi giao thức: query mã hóa trước, chỉ đo bước truy hồi top-100, 3 query khởi động, mỗi query đo một lần, trung bình/p50/p95, GPU tính tới khi kết quả về CPU, PLAID đo cùng cách. Làm rõ "≈280 s" của bản cũ là 173,6 s (posting token) + 107 s (posting μ) của base exact; 164 s là đường của repo; 2,6–4,8 s là bản tối ưu. Số "mã hóa SSR ≈420 s" của bản cũ không có trong log nên thay bằng 1.294 s (ngoại suy từ 5.000 tài liệu, `plaid_bench/ssr.json`). 43,97/43,99 trên NFCorpus giải thích bằng thứ tự hòa điểm (top-100 trùng 100%). Đơn vị thống nhất GB thập phân (0,63 / 2,58 / 4,25 GB thay cho 0,59 / 2,41 / 3,96 GiB), nDCG thang 0–100 (1,2 → 44,0; 1,7–2,4 so với 38,8; 10,8).
+- P0.4: "split sạch" đổi thành "split đối chứng (train/dev)"; bỏ lập luận zero-shot bắt buộc điểm xấp xỉ; không suy ra checkpoint khác mô hình Bảng 1 chỉ từ điểm số; "không thể quy cho pipeline" đổi thành "làm giảm khả năng sai lệch do các thành phần đã kiểm tra"; mục 4.5.2 đọc kết quả theo ba mức (quan sát, giả thuyết, chưa kết luận) và dùng câu thay thế của kế hoạch.
+- P0.5: mục 3.3.1 "Điều kiện bỏ block" nêu cận của tổng điểm gồm điểm đã tích lũy, đóng góp cặp đang duyệt và phần còn lại; thuật toán ghi rõ chỉ minh họa; phân biệt posting mức token và mức tài liệu (3.1, 3.4, với L̄_tok và L̄_doc); mục 2.5.3 bỏ suy luận "ổn định với truy vấn dài", thêm điều kiện bảo toàn thứ tự 2Nη (chứng minh ở Phụ lục B); mục 5.4 ghi cận dưới của LB-rerank không bảo đảm tập ứng viên chứa top-k exact.
+- P0.6: Bảng 4.14 đổi "Không đúng trên corpus lớn" thành "Không quan sát được trên FiQA 57.638 tài liệu với checkpoint và cấu hình đã thử", "Phóng đại" thành nhận xét kỹ thuật về triển khai fast-plaid, thêm ghi chú CPU/GPU là so sánh cấu hình thực tế; mục 4.6 giữ kết luận MS MARCO trong giao thức re-ranking.
+
+**Hình và bảng.** Giữ 9 hình cốt lõi (1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 4.1, 4.2, 5.1, 5.2) và hai hình gốc ở Phụ lục C; bỏ Hình phân rã sai số, ablation, độ nhạy, BEIR trung bình, LIMIT, thời gian lập chỉ mục, K theo miền (trùng với bảng). Hình 4.2 (split) vẽ lại hai panel, ba cột mỗi nhóm thay vì sáu. Hình 5.2 (độ trễ) dùng cùng 100 query và ghi số luồng. Caption dài có bản ngắn cho danh mục. Bảng 1 đầy đủ chuyển sang trang ngang (`sidewaystable`) ở Phụ lục C. Các bảng nhiều chữ dùng cột canh trái (`P{}`) để tránh giãn chữ. Không còn `[H]`. Mục lục chỉ tới cấp section (`tocdepth=1`).
+
+**Tóm tắt và kết luận.** Tóm tắt khoảng 360 từ theo bốn ý (vấn đề, cơ chế, phạm vi kiểm chứng, kết quả và giới hạn), chỉ giữ các số đã thống nhất nguồn, ghi speedup kèm số luồng và mốc so sánh, ghi thêm chi phí bộ nhớ chỉ mục. Kết luận trả lời lần lượt K1–K4, nêu giới hạn và ba hướng ưu tiên.
+
+**Tham chiếu.** Mục tài liệu tham khảo ghi URL của issue #1 và #2, ngày truy cập, commit, ngày tải checkpoint. Danh mục từ viết tắt thêm LB.
+
+**Kiểm tra biên dịch.** Tectonic (XeTeX), 53 trang, không tham chiếu hay trích dẫn lỗi, còn một hbox tràn 4,9pt ở Phụ lục A. Đã xem ảnh các trang có bảng và hình mới.
+
+**Nhóm cần kiểm tra lại (bổ sung mục 9).**
+
+- Tên chương tiếng Việt được giữ theo quyết định của nhóm (13/10/2026); bảng phân công ghi đúng năm tên chương này kèm các mục phụ trách. `latex/backup_v3/` chỉ giữ để đối chiếu.
+- Bảng phân công đã gán lại theo bố cục mới; nhóm sửa người phụ trách cho đúng thực tế nếu cần.
+- Số liệu mã hóa corpus SSR trên FiQA là 1.294 s ngoại suy; nếu nhóm có số đo đầy đủ thì thay vào Bảng 4.13, Bảng 4.14 và Phụ lục D.
+- Các việc trong kế hoạch chưa làm vì cần chạy lại thí nghiệm: đo baseline và kernel mới trên toàn bộ cùng tập query FiQA; thống kê độ dài query, nhãn, trùng lặp và khoảng tin cậy để giải thích chênh lệch theo split.
